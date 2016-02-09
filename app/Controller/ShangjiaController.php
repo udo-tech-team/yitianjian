@@ -240,7 +240,7 @@ class ShangjiaController extends AppController
                         'order' => array('id' => 'DESC'),
                     )
                 );
-                var_dump($avail_port);
+                // var_dump($avail_port);
                 if (!$avail_port) {
                     CakeLog::write('warning', "no available port!");
                     return;

@@ -13,6 +13,18 @@
 <!-- ui modal end -->
 
 <script type="text/javascript">
+function check_telephone() {
+    var tele_len = $('#ss_tel').val().length;
+    var tele_expect_len = 11;
+    if (tele_len > 0 && tele_len != tele_expect_len) { 
+        window.alert('电话号码位数有误！已输入长度' 
+            + tele_len + '，应为' 
+            + tele_expect_len + '位！');
+        // $('#ss_tel').focus();
+    }
+    // window.alert(tele.length);
+}
+
 function confirm_release() {
     var confirm_str = '请您核对以下信息：\n\n';
     confirm_str += '用户电话:\t';
@@ -58,7 +70,7 @@ method='post'
 >
         <div class="field">
           <label>电话</label>
-          <input id='ss_tel' placeholder="138" name="telephone" type="text">
+          <input id='ss_tel' onblur="check_telephone();" placeholder="138" name="telephone" type="text">
         </div>
         <div class="required field">
           <label>期限（20元/月）</label>

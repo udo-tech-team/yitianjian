@@ -61,7 +61,10 @@
         <div class="header">客户端下载</div>
         <a 
         href="<?php
-            $url = Router::url("/", true);
+            $url = Router::url(array(
+                'controller' => 'tutorial',
+                'action' => 'trial_port',
+                '#' => 'download'), true);
             echo $url;
             ?>"
             >
@@ -79,7 +82,11 @@
         <div class="header">用户教程</div>
         <a 
         href="<?php
-            $url = Router::url("/", true);
+            $url = Router::url(array(
+                'controller' => 'tutorial',
+                'action' => 'trial_port',
+                '#' => 'tutorials',
+            ), true);
             echo $url;
             ?>"
             >
@@ -97,7 +104,10 @@
         <div class="header">用户查询账户信息</div>
         <a 
         href="<?php
-            $url = Router::url("/", true);
+            $url = Router::url(array(
+                'controller' => 'users',
+                'action' => 'register',
+                ), true);
             echo $url;
             ?>"
             >

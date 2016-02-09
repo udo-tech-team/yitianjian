@@ -1,0 +1,12 @@
+[mysql]
+1. mac environment, errors like :
+    mysql server through socket  tmp mysql.sock
+    this may be caused by : mysql db server not started
+
+    solved with the following command(with out 'sudo'):
+    /usr/local/mysql/bin/mysqld &
+
+
+[put online]
+1. make sure all the tables are ready(import new *.sql)
+2. remove tmp/cache/...._list

@@ -24,7 +24,7 @@
           <div class="form-group has-feedback">
 			<input type="text" name="email" value="<?php if ($this->request->is('post')) { echo $this->request->data['email']; } ?>" 
 				class="form-control" 
-				id="email" placeholder="Email"/>
+				id="email" placeholder="Email / Telephone"/>
             <span class="glyphicon-user form-control-feedback"></span>
           </div>
           <div class="form-group has-feedback">

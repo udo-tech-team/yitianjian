@@ -27,7 +27,7 @@ method='post'
 >
         <div class="field">
           <label>用户名</label>
-          <input placeholder="xiaofeng" name="username" type="text">
+          <input placeholder="188" name="telephone" type="text">
         </div>
         <div class="field">
           <label>密码</label>
@@ -43,8 +43,8 @@ method='post'
 $('.ui.form')
   .form({
     fields: {
-        username : {
-          identifier : 'username',
+        telephone : {
+          identifier : 'telephone',
           rules : [
           {
           type : 'empty',

@@ -74,9 +74,11 @@ class UsersController extends AppController
           }
           //$pattern = "/^([0-9A-Za-z\\-_\\.]+)@([0-9a-z]+\\.[a-z]{2,3}(\\.[a-z]{2})?)$/i";
           $pattern = "/^([0-9A-Za-z\\-_\\.]+)@([0-9a-z]+\\.[a-z]{2,7}(\\.[a-z]{2})?)$/i";
-          if (!preg_match( $pattern, $rdata['email'])) {
+          // allow user register with both email and telephone
+          $tel_pattern = '#1[\d]{10}#';
+          if (!preg_match($pattern, $rdata['email']) && !preg_match($tel_pattern, $rdata['email'])) {
               $err = 2;
-              $msg = "邮箱格式错误 ！";
+              $msg = "邮箱格式或电话号码错误 ！";
           }
   
           if ( $err == 0) {
@@ -408,8 +410,10 @@ class UsersController extends AppController
         if ($this->request->is('post')) {
             $rdata = $this->request->data;
             $pattern = "/^([0-9A-Za-z\\-_\\.]+)@([0-9a-z]+\\.[a-z]{2,7}(\\.[a-z]{2})?)$/i";
-            if (!preg_match($pattern, $rdata['email'])) {
-                //TODO
+            $tel_pattern = '#1[\d]{10}#';
+            if (!preg_match($pattern, $rdata['email']) && !preg_match($tel_pattern, $rdata['email'])) {
+                $err = 1;
+                $msg = "账户邮箱或电话格式错误！";
             }
             $log_user = $this->User->find('first',
                 array(
@@ -418,13 +422,13 @@ class UsersController extends AppController
                     'fields' => array('uid', 'password', 'login_count')
                 ));
             if (!$log_user) {
-                $err = 1;
+                $err = 2;
                 $msg = "用户不存在！";
             } else {
                 //verify password
                 if (md5($rdata['password']) != $log_user['User']['password']) {
-                    $err = 2;
-                    $msg = "邮箱或密码错误！";
+                    $err = 3;
+                    $msg = "用户名或密码错误！";
                 } else {
                     //user exists, password correct
                     //1.write user session, 2.redirect
@@ -441,7 +445,10 @@ class UsersController extends AppController
                     //update last_log
                     //var_dump($uid);
                     //var_dump($log_user);
-                    $this->redirect('/');
+                    // $this->redirect('/');
+                    return $this->redirect(
+                        array("controller" => "users", "action" => "ucenter")
+                        );
                 }
 
             }

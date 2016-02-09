@@ -34,12 +34,14 @@
         function check_email() {
           var re;
           var ss=$('#email').val();
-          re= /\w@\w*\.\w/
+          var re= /\w@\w*\.\w/;
+          var tel_reg = /1\d{10}/;
           if(re.test(ss)) {
               return true;
-          }
-          else {
-              alert('请输入正确的Email!');
+          } else if (tel_reg.test(ss)) {
+              return true;
+          } else {
+              alert('请输入正确的Email / Telephone!');
               $('#email').focus();
               return false;
           }

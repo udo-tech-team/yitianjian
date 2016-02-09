@@ -34,7 +34,7 @@ class ShangjiaController extends AppController
             $this->loadModel('Merchant');
 
             $user_condition = array(
-                'name' => $rdata['username'],
+                'tel' => $rdata['telephone'],
                 'password' => md5($rdata['password']),
                 );
             $log_user = $this->Merchant->find('first',
@@ -77,11 +77,11 @@ class ShangjiaController extends AppController
                         array("controller" => "shangjia", "action" => "scenter")
                         );
                 } else {
-                    // #TODO username password not match process
+                    // telephone password not match process
                     $errNo = 1;
                     $errMsg = '用户名或密码错误！';
-                    $wflog = sprintf("merchant log err,name[%s] ip[%s]", 
-                        $rdata['username'], $this->request->clientIp());
+                    $wflog = sprintf("merchant log err,telephone[%s] ip[%s]", 
+                        $rdata['telephone'], $this->request->clientIp());
                     CakeLog::write('warning', $wflog);
                 }
         }

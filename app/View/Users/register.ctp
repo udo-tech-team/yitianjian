@@ -33,7 +33,7 @@
 
           <div class="form-group has-feedback">
               <input type="text" name="email" id="email" value="<?php if ($this->request->is('post')) { echo $this->request->data['email']; } ?>"
-                     class="form-control" placeholder="Email"/>
+                     class="form-control" placeholder="Email / Telephone"/>
             <!--span class="glyphicon glyphicon-envelope form-control-feedback"></span-->
             <span class="glyphicon-envelope form-control-feedback"></span>
           </div>

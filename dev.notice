@@ -10,3 +10,9 @@
 [put online]
 1. make sure all the tables are ready(import new *.sql)
 2. remove tmp/cache/...._list
+
+[git help]
+1. 'git add new_file_name' to add new file
+2. if new file is added, 'git commit -m "message" ' to commit to local,
+    else if old file is changed, 'git commit -a' to commit changes to local
+3. 'git push -u origin master' to commit to master

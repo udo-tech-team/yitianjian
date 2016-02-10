@@ -1,0 +1,32 @@
+Revision: 1, ==> new version:
+1.add hongbao marketing strategy
+2.add related tables. a.cake_coupons, cake_consumes
+    ##remove tmp/cache/modes/xxx/myapp_xxxx_server_list
+3.changed orginal code to allow cross controller session 
+4.
+
+#TODO
+Revision xx, ==> fix cake_users uid to id
+
+
+2015年11月15日 星期日 17时42分05秒 CST
+1.add order table, in model order.sql
+
+2016.1.31
+1. add merchant related front end pages
+2. add table cake_merchants, cake_mtlogins
+3. add merchant login[read from db], implement merchant_info page[basic info, history login]
+
+
+#TODO -> 2016.2.9 all done
+1. merchant_info page [change_pass] -> done
+2. border_stat [all] -> done
+3. release account[all] -> done
+
+#TODO -> 2016.2.10
+1. in users controller, allow user register/login with email or telephone as username -> done
+2. change all download urls configurable.
+3. add debug log in ShangjiaController
+4. python script to periodically modify trial_port password
+5. if a user buys an account from the delegate, and register/login, 
+    automatically retrieve the account for him/her in ucenter  -> done

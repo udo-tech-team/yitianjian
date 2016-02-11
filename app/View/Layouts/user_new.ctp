@@ -15,74 +15,43 @@
 
 
 <?php 
-        if ($this->Session->read("suid")):
+        if ($this->Session->read("uid")):
 ?>
 
 <!-- common page begin-->
-<h1 class="ui center aligned header">商家管理中心</h1>
 <!-- <div class="ui stackable container menu"> -->
- <div class="ui large menu"> 
- <a class="<?php if ($this->get('scenter_active')) {
-     echo 'active';
-         } ?> item" href="<?php 
-            echo Router::url(array('controller'=>'shangjia',
-                'action'=>'scenter'), false);
-?>">
-    Home
-  </a>
+ <div class="ui large menu" style="background-color:#dd4b39; color:#ffffff;"> 
 
-    <a class="item" href="<?php 
+    <a class="item" style="background-color:#d73925; color:#ffffff;" href="<?php 
         echo $this->html->url("/"); 
         ?>">
     倚天剑
   </a>
 
-  <a class="<?php if ($this->get('release_active')) {
-        echo 'active';
-            }?> item" href="<?php 
-        echo Router::url(array('controller'=>'shangjia', 'action'=>'release_account'), false);
-        ?>">
-    发放账号
-  </a>
 
   <div class="right menu">
-        <!-- item -->
-        <a 
-    href="<?php 
-        echo $this->Html->url(array(
-            'controller'=>'shangjia',
-            'action'=>'borders_stat'
-        ));
-            ?>"
-                class="<?php 
-                if ($this->get('order_stat_active')) {
-                    echo 'active';
-                }
-            ?> item">订单统计</a>
 
         <!-- item -->
         <a 
     href="<?php 
         echo $this->Html->url(array(
-            'controller' => 'shangjia',
-            'action' => 'merchant_info',
+            'controller' => 'users',
+            'action' => 'ucenter',
         ));
             ?>"
-                class="<?php 
-                if ($this->get('merchant_info_active')) {
-                    echo 'active';
-                }
-            ?> item">商家信息</a>
+                style="color:#ffffff;"
+                class="item">我的主页</a>
 
         <!-- item -->
         <a 
     href="<?php 
             echo $this->Html->url(
-              array('controller' => 'shangjia',
+              array('controller' => 'users',
                   'action' => 'logout'
                   )
               );
             ?>"
+            style="color:#ffffff;"
             class="item">注销</a>
   </div>
 </div>

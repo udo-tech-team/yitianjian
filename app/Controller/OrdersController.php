@@ -55,10 +55,9 @@ if($verify_result) {//验证成功
 
     //交易状态
     $trade_status = $_POST['trade_status'];
-    $ali_verify_info = 'out_trade_no:' . $out_trade_no 
-        . ', trade_no:' . $trade_no . ', trade_status:'
-        . $trade_status;
 
+    $ali_verify_info = sprintf('out_trade_no[%s] trade_no[%s] trade_status[%s]',
+            $out_trade_no, $trade_no, $trade_status);
 
     if($_POST['trade_status'] == 'WAIT_BUYER_PAY') {
     //该判断表示买家已在支付宝交易管理中产生了交易记录，但没有付款
@@ -79,6 +78,21 @@ if($verify_result) {//验证成功
             //如果没有做过处理，根据订单号（out_trade_no）在商户网站的订单系统中查到该笔订单的详细，并执行商户的业务程序
             //如果有做过处理，不执行商户的业务程序
             
+        $updateFields = array(
+            'is_paid' => $this->ORDER_ALREADY_PAID ,
+            'trade_no' => $trade_no,
+            'trade_status' => '"' . $trade_status . '"',
+        );
+        $updateConditions = array(
+            'out_trade_no' => $out_trade_no,
+        );
+        $up_res = $this->Order->updateAll(
+            $updateFields,
+            $updateConditions
+        );
+        $update_result = sprintf('alipay notify, out_trade_no[%s] update result[%s]',
+             $out_trade_no, $up_res);
+        CakeLog::write('info', $update_result);
         echo "success";        //请不要修改或删除
 
         //调试用，写文本函数记录程序运行情况是否正常
@@ -230,6 +244,7 @@ else {
         // already log in
     }
 
+    // get post data and send payment request to alipay
     function alicreate() {
         $this->view = 'empty';
         $uid = CakeSession::read('uid');
@@ -515,11 +530,11 @@ return $html_text;
                     $updateFields,
                     $updateConditions
                 );
-                $update_result = 'out_trade_no=' . $out_trade_no
+                $update_result = 'alipay return, out_trade_no=' . $out_trade_no
                         . ', update result=' . $up_res;
                 CakeLog::write('info', $update_result);
                 $this->redirect(
-                        array("controller" => "users", "action" => "apply_acc")
+                        array("controller" => "users", "action" => "ucenter")
                 );
             }
             else {

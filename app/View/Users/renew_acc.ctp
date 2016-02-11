@@ -73,7 +73,7 @@ method='post'
     <div class="item">
       <div class="content">
         <div class="header">不限流量</div>
-        流量不设限！妈妈再也不用担心我上youtube等视频网站流量不够用啦！
+        流量不设限！妈妈再也不用担心我上youtube流量不够用啦！
       </div>
     </div>
     <!-- item end-->

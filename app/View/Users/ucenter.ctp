@@ -166,29 +166,50 @@
                          <td><?php echo $this->get('user_port')['Port']['sspass']; ?></td>
                       </tr>
                       <tr>
-                         <td>月流量</td>
-                         <td>30G</td>
+                         <td>过期时间</td>
+                         <td><?php echo $this->get('user_port')['Port']['expire']; ?></td>
                       </tr>
              
                    </tbody>
                 </table>
              </div>      <!--table-responsive-->
-                <span>可参考相关教程</span> <br/>
-                <span>将上述账号信息填入shadowsocks客户端即可开启科学上（翻）网（墙）模式，
-                            <?php echo $this->Html->link(
-                             'shadowsocks客户端下载点我',
+            <?php 
+                    $remain_day = $this->get('remain_day');
+                ?>
+             <?php if ($remain_day > 0): ?>
+             <span>账号将在<?php 
+                    echo $remain_day;
+                ?> 天后过期</span> 
+             <?php elseif ($remain_second > 0 && $remain_day == 0): ?>
+             <span>账号将在明天过期</span> 
+             <?php else: ?>
+             <span>账号已过期</span> 
+             <?php endif; ?>
+                    现在去<a class="btn btn-success" href="<?php
+                    echo $this->Html->url(array(
+                        'controller' => 'users',
+                        'action' => 'renew_acc',
+                    ));
+                    ?>"
+                >续费</a><br/>
+                <span>将上述账号信息填入shadowsocks客户端即可开启科学上（翻）网（墙）模式，shadowsocks客户端
+                <a href="<?php 
+                            echo $this->Html->url(
                              array(
                                  'controller' => 'tutorial',
                                  'action' => 'trial_port',
                                  '#' => 'download'
                              )
                             );
-                            ?>
+                                ?>" 
+                    class="btn btn-warning">
+                             下载
+                </a>
                     ，<font color=red>需要在浏览器中打开</font></span><br/>
             <?php else: ?>
             <span>暂时未获取到您的账号信息，您可以:</span><br/> <br/>
             <a href="<?php 
-                echo $this->Html->url(['controller' => 'users', 'action' => 'apply_acc']);
+                echo $this->Html->url(['controller' => 'users', 'action' => 'buy_acc']);
                  ?>" class="btn btn-primary btn-lg active" role="button">购买科学上（翻）网（墙）账号</a>
 
             <?php endif ?>

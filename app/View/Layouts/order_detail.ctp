@@ -107,16 +107,16 @@
         <!--thead></thead-->
         <tbody>
             <tr>
-                <td> 购买时间
+                <td> 购买时长
                 </td>
                 <td> <?php $record = $this->get('trade_record'); echo $record['months']; ?>个月
                 </td>
             </tr>
 
             <tr>
-                <td> 月流量
+                <td> 线路
                 </td>
-                <td> <?php echo $record['month_flow']; ?>G
+                <td> 美国Los Angeles
                 </td>
             </tr>
 
@@ -131,6 +131,13 @@
                 <td> 订单状态
                 </td>
                 <td><?php if (!$record['is_paid']):?> 待付款 <?php else: ?> 已付款<?php endif; ?>
+                </td>
+            </tr>
+
+            <tr>
+                <td> 消费保障
+                </td>
+                <td> 七天无理由退款
                 </td>
             </tr>
 

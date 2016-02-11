@@ -6,6 +6,17 @@
     solved with the following command(with out 'sudo'):
     /usr/local/mysql/bin/mysqld &
 
+2. add new field[column] into a table, should delete the file in cache/
+    "persistent/myapp_cake_core_method_cache"
+    to make the new added field read by cakephp
+
+mysql> select date_add(now(), interval '1,2' YEAR_MONTH);
++--------------------------------------------+
+| date_add(now(), interval '1,2' YEAR_MONTH) |
++--------------------------------------------+
+| 2017-04-11 22:12:01                        |
++--------------------------------------------+
+1 row in set (0.00 sec)
 
 [put online]
 1. make sure all the tables are ready(import new *.sql)
@@ -16,3 +27,5 @@
 2. if new file is added, 'git commit -m "message" ' to commit to local,
     else if old file is changed, 'git commit -a' to commit changes to local
 3. 'git push -u origin master' to commit to master
+
+

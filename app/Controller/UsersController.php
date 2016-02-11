@@ -13,6 +13,13 @@ class UsersController extends AppController
     private $PORT_AVAILABLE = 0;
     private $PORT_ERROR = 2;
 
+    private $NOT_PAID = 0;  // alipay didn't return succ
+    private $ALREADY_PAID = 1; // user paid but port not updated
+    private $PAID_AND_UPDATED = 2; // user paid and port updated
+
+    private $USER_BUY_NEW = 'user_buy_new';
+    private $OLD_CONTINUE = 'old_continue';
+
     //add security xx=>false to allow cross controller session
     //add beforeFilter to allow post register data
     public function beforeFilter() {
@@ -180,6 +187,118 @@ class UsersController extends AppController
         $this->redirect('/');
     }
 
+    private function update_user_port($paid_order) {
+        // paid_order is an array with fields like acctype/uid/is_paid/months
+
+        $uid = $this->Session->read('uid');
+        if (!$paid_order) {
+            $log_str = sprintf('uid[%s] empty paid_order', $uid);
+            return false;
+        }
+
+        $this->loadModel('Port');
+        $is_err = 0;   // default no err
+        if ($paid_order['acctype'] == $this->USER_BUY_NEW) {
+            // user buy new account
+            do {
+              $dbo = $this->Port->getDataSource();
+              $lock_query = sprintf('LOCK TABLES %s AS %s WRITE;', $this->Port->tablePrefix . $this->Port->table, $this->Port->alias);
+              $unlock_query = "UNLOCK TABLES";
+  
+              if (!$dbo->execute($lock_query)) {
+                  $unlock_res = $dbo->execute($unlock_query);
+                  $log_str = sprintf('uid[%s], unlock_res[%s], order_id[%s] lock failed', 
+                        $uid, $unlock_res, $paid_order['id']);
+                  CakeLog::write('warning', $log_str);
+                  $is_err = 1;
+                  break;
+              }
+              //find first available port
+              $avail_port = $this->Port->find('first',
+                    array('conditions'=>array('status' => 0, 'uid' => 0),
+                        'fields' => array('id', 'ssport')
+                    )
+                );
+
+              if (!$avail_port) {
+                  $unlock_res = $dbo->execute($unlock_query);
+                  $log_str = sprintf('uid[%s], order_id[%s] unlock_res[%s] empty avail_port', 
+                        $uid, $paid_order['id'], $unlock_res);
+                  CakeLog::write('warning', $log_str);
+                  $is_err = 2;
+                  break;
+              }
+
+              $duration = $paid_order['months'];
+              $expire = date('Y-m-d H:i:s', strtotime("+$duration month"));
+              $up_data = array(
+                  'status' => $this->PORT_IN_USE,
+                  'uid' => $uid,
+                  'modified' => 'now()',
+                  'expire' => '"' . $expire . '"',
+              );
+              $up_cond = array('id' => $avail_port['Port']['id']);
+              $up_res = $this->Port->updateAll($up_data, $up_cond);
+  
+              $unlock_res = $dbo->execute($unlock_query); // if success returns true
+              $log_str = sprintf('uid[%s] order_id[%s] unlock_res[%s]',
+                    $uid, $paid_order['id'], $unlock_res);
+              CakeLog::write('info', $log_str);
+            } while (0);
+
+            if ($is_err > 0) {
+                $log_str = sprintf('uid[%s] order_id[%s] update port failed.', 
+                    $uid, $paid_order['id']);
+                CakeLog::write('warning', $log_str);
+                return false;
+            }
+
+            // update port succ, begin update order[is_paid]
+            $this->loadModel('Order');
+            $up_data = array('is_paid' => $this->PAID_AND_UPDATED);
+            $up_cond = array('id' => $paid_order['id']);
+            $up_res = $this->Order->updateAll($up_data, $up_cond);
+            $log_str = sprintf('uid[%s] order_id[%s] is_paid[%s] up_res[%s]', 
+                    $uid, $paid_order['id'], $this->PAID_AND_UPDATED, $up_res);
+            CakeLog::write('info', $log_str);
+
+            // user buy new account end
+        } else if ($paid_order['acctype'] == $this->OLD_CONTINUE) {
+            // old account renew
+            // 1. update cake_ports expire filed
+            // 2. update cake_orders is_paid field
+            $username = CakeSession::read('username');
+            $port_res = $this->get_current_port($uid, $username);
+            $old_expire = $port_res['Port']['expire'];
+            $add_month = $paid_order['months'];
+            $new_expire = date('Y-m-d H:i:s', 
+                    strtotime("$old_expire + $add_month month"));
+            $up_data = array(
+                'expire' => "'" . $new_expire . "'",
+            );
+            $up_cond = array('id' => $port_res['Port']['id']);
+
+            $up_res = $this->Port->updateAll($up_data, $up_cond);
+            $log_info = sprintf('uid[%s] order_id[%s] update expire[%s] up_res[%s]',
+                    $uid, $paid_order['id'], $new_expire, $up_res);
+            CakeLog::write('info', $log_info);
+
+            $this->loadModel('Order');
+            $up_data = array(
+                'is_paid' => $this->PAID_AND_UPDATED,
+            );
+            $up_cond = array(
+                'id' => $paid_order['id'],
+            );
+            $up_res = $this->Order->updateAll($up_data, $up_cond);
+
+            $log_str = sprintf('uid[%s] order_id[%s] is_paid[%s] up_res[%s]', 
+                    $uid, $paid_order['id'], $this->PAID_AND_UPDATED, $up_res);
+            CakeLog::write('info', $log_str);
+        }
+        return true;
+    }
+
     function ucenter() {
         //check if user logged in
         //var_dump(CakeSession::read('vcode'));
@@ -188,16 +307,82 @@ class UsersController extends AppController
                 array("controller" => "users", "action" => "login")
             );
         }
-
         // user already logged in
-        // fetch port info
-        $this->loadModel('Port');
         $uid = CakeSession::read('uid');
-        $port_res = $this->Port->find('first',
-            array('conditions'=>array('status' => $this->PORT_IN_USE, 'uid' => $uid),
+
+        // user buys an account or renews an account
+        // update port info
+        $this->loadModel('Order');
+        $order_rec = $this->Order->find('first',
+            array(
+                'conditions' => array('uid' => $uid, 
+                'is_paid' => $this->ALREADY_PAID),
             )
         );
+
+        // order record exists, user has paid for new account or renew old
+        if ($order_rec) {
+            $log_str = sprintf("uid[%s] has paid [%s] account",
+                    $uid, $order_rec['Order']['acctype']);
+            CakeLog::write('debug', $log_str);
+
+            $up_succ = $this->update_user_port($order_rec['Order']);
+            $log_str = sprintf("uid[%s] update [%s] account res[%s]",
+                    $uid, $order_rec['Order']['acctype'], $up_succ);
+            CakeLog::write('info', $log_str);
+        }
+
+        // fetch port info
+        $this->loadModel('Port');
+        $port_res = $this->Port->find('first',
+            array(
+                'conditions'=>array('status' => $this->PORT_IN_USE, 'uid' => $uid),
+                'order' => array('id' => 'DESC'),
+            )
+        );
+
+        // not exists in port table, retrieve in mtorder table
+        $username = CakeSession::read('username');
+        do {
+            if ($port_res || !$username) {
+                // already have port_res, or session[username] empty, quit
+                break;
+            }
+            $this->loadModel('Mtorder');
+            $mtorder_res = $this->Mtorder->find('first',
+                array(
+                    'conditions' => array('telephone' => $username),
+                    'fields' => array('port_id'),
+                )
+            );
+
+            // not found in mtorder table, quit
+            if (!$mtorder_res) {
+                break;
+            }
+
+            // var_dump($mtorder_res);
+            $port_res = $this->Port->find('first',
+                array(
+                    'conditions'=>array(
+                        'id' => $mtorder_res['Mtorder']['port_id'],
+                        'status' => $this->PORT_IN_USE,
+                        'uid >' => 0,
+                        ),
+                    )
+            );
+        } while (0);
+
         $this->set('user_port', $port_res);
+
+        if ($port_res) {
+            $expire_second = strtotime($port_res['Port']['expire']);
+            $now_second = time();
+            $remain_second = $expire_second - $now_second;
+            $remain_day = (int)($remain_second / (60 * 60 * 24));
+            $this->set('remain_day', $remain_day);
+            $this->set('remain_second', $remain_second);
+        }
 
         //fetch balance info
         $this->loadModel('Coupon');
@@ -209,6 +394,86 @@ class UsersController extends AppController
 
         $this->set('title_for_layout', "User::ucenter");
         $this->layout = "ucenter";
+    }
+
+    function buy_acc() {
+        $this->layout = 'user_new';
+        $this->set('title_for_layout', 'User::buy_acc');
+        $this->set('acctype', $this->USER_BUY_NEW);
+
+        $uid = $this->Session->read('uid');
+        // if not logged in
+        if (empty($uid)) {
+            $this->redirect(
+                array("controller" => "users", "action" => "login")
+            );
+        }
+    }
+
+    function renew_acc() {
+        $this->layout = 'user_new';
+        $this->set('title_for_layout', 'User::renew_acc');
+        $this->set('acctype', $this->OLD_CONTINUE);
+
+        $uid = $this->Session->read('uid');
+        $username = $this->Session->read('username');
+        // if not logged in
+        if (empty($uid)) {
+            $this->redirect(
+                array("controller" => "users", "action" => "login")
+            );
+        }
+
+        $port_res = $this->get_current_port($uid, $username);
+        $this->set('port', $port_res['Port']);
+    }
+
+    private function get_current_port($uid, $username) {
+        if (!$uid || !$username) {
+            return;
+        }
+        $this->loadModel('Port');
+
+        // find user self bought port
+        $port_res = $this->Port->find('first',
+            array(
+                'conditions'=>array('status' => $this->PORT_IN_USE, 'uid' => $uid),
+                'order' => array('id' => 'DESC'),
+            )
+        );
+
+        // port_res empty, find merchant delegated port
+        do {
+            if ($port_res || !$username) {
+                // already have port_res, or session[username] empty, quit
+                break;
+            }
+            $this->loadModel('Mtorder');
+            $mtorder_res = $this->Mtorder->find('first',
+                array(
+                    'conditions' => array('telephone' => $username),
+                    'fields' => array('port_id'),
+                )
+            );
+
+            // not found in mtorder table, quit
+            if (!$mtorder_res) {
+                break;
+            }
+
+            // var_dump($mtorder_res);
+            $port_res = $this->Port->find('first',
+                array(
+                    'conditions'=>array(
+                        'id' => $mtorder_res['Mtorder']['port_id'],
+                        'status' => $this->PORT_IN_USE,
+                        'uid >' => 0,
+                        ),
+                    )
+            );
+        } while (0);
+
+        return $port_res;
     }
 
     function apply_acc() {
@@ -435,6 +700,7 @@ class UsersController extends AppController
                     //3.update last_login
                     $uid = $log_user['User']['uid'];
                     $this->Session->write('uid', $uid);
+                    $this->Session->write('username', $rdata['email']); // here email maybe a telephone
                     $login_count = $log_user['User']['login_count'] + 1;
                     $update_field = array('login_count' => $login_count, 'modified' => 'now()');
                     $conditions = array('uid' => $uid);

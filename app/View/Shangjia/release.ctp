@@ -73,7 +73,10 @@ method='post'
           <input id='ss_tel' onblur="check_telephone();" placeholder="138" name="telephone" type="text">
         </div>
         <div class="required field">
-          <label>期限（20元/月）</label>
+          <label>期限（<?php 
+            echo Configure::read('merchant_delegate.monthly_price') / 100; ?>
+            元/月）
+          </label>
           <select id='ss_month' class="ui fluid dropdown" name="ss_month">
             <option value="1">1 个月</option>
             <option value="2">2 个月</option>
@@ -82,6 +85,14 @@ method='post'
             <option value="9">9 个月</option>
             <option value="12">12 个月</option>
           </select>
+        </div>
+        <div class="field">
+        <div class="ui pointing label">
+            期限1个月表示有效期从
+            <?php echo date('Y-m-d', time()); ?>
+            至
+            <?php echo date('Y-m-d', strtotime('+1 month')); ?>
+        </div>
         </div>
         <button onclick="return confirm_release();" 
                 class='ui primary button'>发放</button>

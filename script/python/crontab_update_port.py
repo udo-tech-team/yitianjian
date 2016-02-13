@@ -24,6 +24,12 @@ class UpdatePort:
     # global mark to decide go on or not
     GOON = True
 
+    # crond type
+    TRIAL_PORT_CRONTAB = 'trial_port_crontab'
+    EXPIRED_CRONTAB = 'expired_crontab'
+    MERCHANT_CRONTAB = 'merchant_crontab'
+    trial_status = 3
+
     def __init__(self):
       logging.basicConfig(level=logging.DEBUG,
             format='%(asctime)s %(filename)s[%(lineno)s] %(levelname)s %(message)s',
@@ -66,6 +72,52 @@ class UpdatePort:
         log_str = 'exception occurs[%s]' % (e)
         logging.warning(log_str)
 
+    def update_port(self, rec):
+        if not self.GOON:
+            logging.warning('GOON is false, stop.')
+            return False
+        #change ss_pass
+        # 1. remove port 2. add the removed port with another pass
+        # 3. update in db table
+        cmd = 'remove:{"server_port":' + str(rec[1]) + '}'
+        net_str = self.conf['password'] + self.conf['pass_cmd_seperator'] + cmd
+        self.sock.sendall(net_str)
+        exec_res = self.sock.recv(1024)
+
+        log_str = '[%s] exec res[%s]' % (net_str, exec_res)
+        if exec_res != 'ok':
+            logging.critical(log_str)
+            return False
+        else:
+            logging.info(log_str)
+
+        old_pass = rec[4]
+        new_pass = self.get_next_sspass(old_pass)
+        cmd = 'add:{"server_port":' + str(rec[1]) + ',"password":"' + new_pass + '"}'
+        net_str = self.conf['password'] + self.conf['pass_cmd_seperator'] + cmd
+        self.sock.sendall(net_str)
+        exec_res = self.sock.recv(1024)
+
+        log_str = '[%s] exec res[%s]' % (net_str, exec_res)
+        if exec_res != 'ok':
+            logging.critical(log_str)
+            return False
+        else:
+            logging.info(log_str)
+
+        # update cake_ports
+        # update_query = 'update cake_ports set sspass="' + new_pass + '" where id = ' + str(rec[0])
+        update_query = 'update cake_ports set sspass="%s", modified=now() where id=%s' % (new_pass, rec[0])
+        exec_res = self.dbObj.exec_query(update_query)
+        log_str = '[%s] exec res[%s]' % (update_query, exec_res)
+        if exec_res < 1:
+            logging.critical(log_str)
+            return False
+        else:
+            logging.info(log_str)
+
+        return True
+
     def reset_expired_port(self):
       """reset expired port[update status/uid/expire/sspass fields]"""
       # first update status/uid, so record will not show in ucenter
@@ -87,7 +139,7 @@ class UpdatePort:
             logging.info(log_str)
 
             # update cake_ports
-            update_query = 'update cake_ports set status = 0, uid = 0, expire = null where id = ' + str(rec[0])
+            update_query = 'update cake_ports set status = 0, uid = 0 where id = ' + str(rec[0])
             #exec_res = 1
             exec_res = self.dbObj.exec_query(update_query)
             log_str = '[%s] exec res[%s]' % (update_query, exec_res)
@@ -96,46 +148,12 @@ class UpdatePort:
                 continue
             else:
                 logging.info(log_str)
-
-            #change ss_pass
-            # 1. remove port 2. add the removed port with another pass
-            # 3. update in db table
-            cmd = 'remove:{"server_port":' + str(rec[1]) + '}'
-            net_str = self.conf['password'] + self.conf['pass_cmd_seperator'] + cmd
-            self.sock.sendall(net_str)
-            exec_res = self.sock.recv(1024)
-
-            log_str = '[%s] exec res[%s]' % (net_str, exec_res)
-            if exec_res != 'ok':
+            if not self.update_port(rec):
+                log_str = 'port_id[%d] update failed.' % (rec[0])
                 logging.critical(log_str)
-                continue
             else:
-                logging.info(log_str)
+                log_str = 'port_id[%d] update succ' % (rec[0])
 
-            old_pass = rec[4]
-            new_pass = self.get_next_sspass(old_pass)
-            cmd = 'add:{"server_port":' + str(rec[1]) + ',"password":"' + new_pass + '"}'
-            net_str = self.conf['password'] + self.conf['pass_cmd_seperator'] + cmd
-            self.sock.sendall(net_str)
-            exec_res = self.sock.recv(1024)
-
-            log_str = '[%s] exec res[%s]' % (net_str, exec_res)
-            if exec_res != 'ok':
-                logging.critical(log_str)
-                continue
-            else:
-                logging.info(log_str)
-
-            # update cake_ports
-            # update_query = 'update cake_ports set sspass="' + new_pass + '" where id = ' + str(rec[0])
-            update_query = 'update cake_ports set sspass="%s", modified=now() where id=%s' % (new_pass, rec[0])
-            exec_res = self.dbObj.exec_query(update_query)
-            log_str = '[%s] exec res[%s]' % (update_query, exec_res)
-            if exec_res < 1:
-                logging.critical(log_str)
-                continue
-            else:
-                logging.info(log_str)
 
       except Exception as e:
         self.GOON = False
@@ -175,14 +193,68 @@ class UpdatePort:
 
         return new_pass_6bit
 
+    def update_trial_port(self):
+        if not self.GOON:
+            logging.warning('GOON is false, stop.')
+            return
+        try:
+            self.dbObj = Database.MysqlObj()
+            sql_query = 'select * from cake_ports where status=%d order by id desc limit 1' % (self.trial_status) 
+            count, all_res = self.dbObj.find_all(sql_query)
+            log_str = 'query[%s] record count[%d]' % (sql_query, count)
+            if count == 1:
+                # trial_port exists
+                logging.info(log_str)
+                rec = all_res[0]
+                if not self.update_port(rec):
+                    log_str = 'port_id[%d] update failed.' % (rec[0])
+                    logging.critical(log_str)
+                else:
+                    log_str = 'port_id[%d] update succ' % (rec[0])
+            else:
+                logging.critical(log_str)
+                # trial_port not exists
+                # try allocate a trial port
+                while True:
+                    sql_query = 'select * from cake_ports where status=0 and uid=0 order by id desc limit 1'
+                    count, all_res = self.dbObj.find_all(sql_query)
+                    log_str = 'query[%s] record count[%s]' % (sql_query, count)
+                    # no available port
+                    if count < 1:
+                        logging.critical(log_str)
+                        break
+                    logging.info(log_str)
+                    update_query = 'update cake_ports set status=3, modified=now(), uid=88888 where id=%s' % (all_res[0][0])
+                    exec_res = self.dbObj.exec_query(update_query)
+                    log_str = 'query[%s] exec_res[%s] id[%d]' % (sql_query, exec_res, all_res[0][0])
+                    if exec_res != 1:
+                        logging.critical(log_str)
+                        break
+                    else:
+                        logging.info(log_str)
+                    # this is a fake while loop
+                    break
+        except Exception as e:
+            log_str = 'exception occurs, [%s]' % (e)
+            logging.warning(log_str)
+
+    def update_merchant_port(self):
+        pass
+
     def client_start(self):
         self.load_conf()
         self.init_sock()
-        self.reset_expired_port()
+        if len(sys.argv) <= 1 or sys.argv[1] == self.EXPIRED_CRONTAB:
+            self.reset_expired_port()
+        elif sys.argv[1] == self.TRIAL_PORT_CRONTAB:
+            self.update_trial_port()
+        elif sys.argv[1] == self.MERCHANT_CRONTAB:
+            self.update_merchant_port()
 
 if __name__ == "__main__" :
+    print sys.argv, len(sys.argv)
     uptp = UpdatePort()
     #uptp.reset_expired_port()
     uptp.client_start()
 
-    logging.info('run reset_expired_port finished')
+    logging.info('run crontab_update_port finished')

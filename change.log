@@ -31,3 +31,7 @@ Revision xx, ==> fix cake_users uid to id
 5. if a user buys an account from the delegate, and register/login, 
     automatically retrieve the account for him/her in ucenter  -> done
 6. enable user buy/renew port -> done
+
+
+#TODO -> 2016.2.14
+1. optimize page loading speed, remove useless resource links

@@ -20,9 +20,9 @@
         echo $this->Html->css('freelancer');
 ?>
 
-    <!-- Custom Fonts -->
+    <!-- Custom Fonts 
     <link href="http://fonts.useso.com/css?family=Montserrat:400,700" rel="stylesheet" type="text/css">
-    <link href="http://fonts.useso.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css">
+    <link href="http://fonts.useso.com/css?family=Lato:400,700,400italic,700italic" rel="stylesheet" type="text/css">-->
 
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -96,12 +96,12 @@
                     -->
                 </div>
 		<div class="col-lg-4 text-left">
-            <h4><p class="text-lowercase">B服务器地址: gso.hk</p></h4>
-                    <h4>端口: 10086</h4>
+        <h4><p class="text-lowercase">服务器地址: <?php echo $this->get('port')['sshost']; ?></p></h4>
+        <h4>端口: <?php echo $this->get('port')['ssport']; ?></h4>
                     <div id="vip"></div>
-                    <h4><p class="text-lowercase">B密码: 05a671</p></h4>
-                    <h4><p class="text-lowercase">加密方式: aes-256-cfb</p></h4>
-                    <h4>状态: <font color="green">正常</font></h4>
+                    <h4><p class="text-lowercase">密码: <?php echo $this->get('port')['sspass']; ?></p></h4>
+                    <h4><p class="text-lowercase">加密方式: <?php echo $this->get('port')['ssencrypt']; ?></p></h4>
+                    <h4>状态: <?php if ($this->get('port')): ?><font color="green">正常 </font><?php else:?>  异常<?php endif; ?></h4>
                     <h4><font color="red">注意：每6小时更新一次密码</font></h4>
                     <h4><font color="red"><a href="<?php 
                     echo $this->Html->url('/');
@@ -509,6 +509,7 @@ echo "hello";
         echo $this->Html->script('trialport/jqBootstrapValidation');
         echo $this->Html->script('trialport/classie');
         echo $this->Html->script('trialport/freelancer');
+        echo $this->Html->script('jquery.easing.min.js');
 ?>
     <!-- jQuery >
     <script src="js/jquery.js"></script-->
@@ -517,9 +518,7 @@ echo "hello";
     <script src="js/bootstrap.min.js"></script-->
 
     <!-- Plugin JavaScript >
-    <script src="js/classie.js"></script>
-    <script src="js/cbpAnimatedHeader.js"></script-->
-    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script-->
 
     <!-- Contact Form JavaScript >
     <script src="js/jqBootstrapValidation.js"></script>

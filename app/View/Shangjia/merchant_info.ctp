@@ -10,6 +10,75 @@
     <!-- ui celled grid begin -->
     <div class="ui celled grid">
       <div class="sixteen wide column">
+        <div class="ui top attached label">shadowsocks商家试用信息（定时更新密码）</div>
+      </div>
+
+      <div class="two column row">
+        <div class="right aligned five wide column">
+              远程地址
+        </div>
+    
+        <div class="left aligned eleven wide column">
+            <?php echo $this->get('port')['sshost']; ?>
+        </div>
+      </div>
+
+      <div class="two column row">
+        <div class="right aligned five wide column">
+              远程端口
+        </div>
+    
+        <div class="left aligned eleven wide column">
+            <?php echo $this->get('port')['ssport']; ?>
+        </div>
+      </div>
+
+      <div class="two column row">
+        <div class="right aligned five wide column">
+              加密方式
+        </div>
+    
+        <div class="left aligned eleven wide column">
+            <?php echo $this->get('port')['ssencrypt']; ?>
+        </div>
+      </div>
+
+      <div class="two column row">
+        <div class="right aligned five wide column">
+              密码
+        </div>
+    
+        <div class="left aligned eleven wide column">
+            <?php echo $this->get('port')['sspass']; ?>
+        </div>
+      </div>
+
+      <div class="two column row">
+        <div class="right aligned five wide column">
+              上次密码更新时间
+        </div>
+    
+        <div class="left aligned eleven wide column">
+            <?php echo $this->get('port')['modified']; ?>
+        </div>
+      </div>
+
+      <div class="two column row">
+        <div class="right aligned five wide column">
+              附加说明
+        </div>
+    
+        <div class="left aligned eleven wide column">
+            密码定期更新，若连接出错，请在客户端重填新密码
+        </div>
+      </div>
+
+    </div>
+    <!-- ui celled grid end -->
+  
+    <!-- ui celled grid begin -->
+    <div class="ui celled grid">
+      <div class="sixteen wide column">
         <div class="ui top attached label">账户信息</div>
       </div>
 

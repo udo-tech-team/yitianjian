@@ -1,12 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+######################################
+#
+# @param:  trial_port_crontab | expired_crontab | merchant_crontab
+#    crontab to update port status
+#
+######################################
+
 import socket
 import hashlib
 import logging
 import os
 import sys
 import time
+import traceback
 import ConfigParser
 
 cur_dir = os.getcwd()
@@ -28,7 +36,10 @@ class UpdatePort:
     TRIAL_PORT_CRONTAB = 'trial_port_crontab'
     EXPIRED_CRONTAB = 'expired_crontab'
     MERCHANT_CRONTAB = 'merchant_crontab'
+    # trial_port status
     trial_status = 3
+    # merchant_port status
+    merchant_status = 4
 
     def __init__(self):
       logging.basicConfig(level=logging.DEBUG,
@@ -139,7 +150,8 @@ class UpdatePort:
             logging.info(log_str)
 
             # update cake_ports
-            update_query = 'update cake_ports set status = 0, uid = 0 where id = ' + str(rec[0])
+            update_query = 'update cake_ports set status = 0, uid = 0, modified=now() where id = %d' \
+                    % (rec[0])
             #exec_res = 1
             exec_res = self.dbObj.exec_query(update_query)
             log_str = '[%s] exec res[%s]' % (update_query, exec_res)
@@ -202,6 +214,7 @@ class UpdatePort:
             sql_query = 'select * from cake_ports where status=%d order by id desc limit 1' % (self.trial_status) 
             count, all_res = self.dbObj.find_all(sql_query)
             log_str = 'query[%s] record count[%d]' % (sql_query, count)
+            # early version only 1 trail_port
             if count == 1:
                 # trial_port exists
                 logging.info(log_str)
@@ -224,7 +237,7 @@ class UpdatePort:
                         logging.critical(log_str)
                         break
                     logging.info(log_str)
-                    update_query = 'update cake_ports set status=3, modified=now(), uid=88888 where id=%s' % (all_res[0][0])
+                    update_query = 'update cake_ports set status=3, modified=now() where id=%s' % (all_res[0][0])
                     exec_res = self.dbObj.exec_query(update_query)
                     log_str = 'query[%s] exec_res[%s] id[%d]' % (sql_query, exec_res, all_res[0][0])
                     if exec_res != 1:
@@ -232,14 +245,94 @@ class UpdatePort:
                         break
                     else:
                         logging.info(log_str)
-                    # this is a fake while loop
+                    # this is a fake while loop to avoid too many levels of if/else statement
                     break
         except Exception as e:
             log_str = 'exception occurs, [%s]' % (e)
             logging.warning(log_str)
+        self.sock.close()
+
+    def assign_merchant_port(self, mtid):
+        if not mtid:
+            log_str = 'empty mtid'
+            logging.warning(log_str)
+            return False
+        sql_query = 'select * from cake_ports where status=%d and mtid=%d order by id DESC limit 1' \
+                % (self.merchant_status, mtid)
+        count, all_res = self.dbObj.find_all(sql_query)
+        # this is a fake while loop
+        while True:
+            if count > 0:
+                log_str = 'mtid[%s] already has ssport' % (mtid)
+                logging.warning(log_str)
+                break
+            # find an available port
+            sql_query = 'select id from cake_ports where status=0 and uid=0 and mtid=0 order by id DESC limit 1'
+            count, all_res = self.dbObj.find_all(sql_query)
+            log_str = 'query[%s] record count[%s]' % (sql_query, count)
+            if count < 1:
+                logging.critical(log_str)
+                break
+            # available port exists
+            port_id = all_res[0][0]
+            
+            # assign port to merchant
+            update_query = 'update cake_ports set status=%d, mtid=%d, modified=now() where id=%d' \
+                    % (self.merchant_status, mtid, port_id)
+            exec_res = self.dbObj.exec_query(update_query)
+            log_str = 'query[%s] exec_res[%s]' % (update_query, exec_res)
+            if not exec_res:
+                logging.critical(log_str)
+            else:
+                logging.info(log_str)
+
+            # finally exit while
+            break
+
+        return True
 
     def update_merchant_port(self):
-        pass
+        # many merchants, many ports
+        # update ports by mtid
+        if not self.GOON:
+            logging.warning('GOON is false, stop.')
+            return
+        try:
+            self.dbObj = Database.MysqlObj()
+            sql_query = 'select id from cake_merchants'
+            count, all_res = self.dbObj.find_all(sql_query)
+            log_str = 'query[%s] record count[%d]' % (sql_query, count)
+            if count >= 1:
+                # merchant exists
+                logging.info(log_str)
+                # traverse all record
+                # rec(id,created,modified,is_verified,level,orders_score,...)
+                for rec in all_res:
+                    # get merchant port record
+                    sql_query = 'select * from cake_ports where status=%d and mtid=%d order by id DESC limit 1' \
+                            % (self.merchant_status, rec[0])
+                    count, all_res = self.dbObj.find_all(sql_query)
+                    if count > 0:
+                        # merchant port record exists
+                        up_res = self.update_port(all_res[0])
+                        log_str = 'mtid[%s] port record[%s] update res[%s]' % (rec[0], all_res[0], up_res)
+                        if not up_res:
+                            logging.critical(log_str)
+                        else:
+                            logging.info(log_str)
+                    else:
+                        # merchant port record not exists
+                        mtid = rec[0]
+                        if not self.assign_merchant_port(mtid):
+                            log_str = 'assign mercahnt port failed.mtid[%s]' % (rec[0])
+                            logging.critical(log_str)
+            else:
+                #no merchants
+                logging.warning(log_str)
+        except Exception as e:
+            log_str = 'exception occurs, [%s] sys[%s] traceback[%s]' \
+                    % (e, sys.exc_info(), traceback.print_exc())
+            logging.warning(log_str)
 
     def client_start(self):
         self.load_conf()
@@ -252,7 +345,7 @@ class UpdatePort:
             self.update_merchant_port()
 
 if __name__ == "__main__" :
-    print sys.argv, len(sys.argv)
+    #print sys.argv, len(sys.argv)
     uptp = UpdatePort()
     #uptp.reset_expired_port()
     uptp.client_start()

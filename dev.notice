@@ -21,6 +21,8 @@ mysql> select date_add(now(), interval '1,2' YEAR_MONTH);
 [put online]
 1. make sure all the tables are ready(import new *.sql)
 2. remove tmp/cache/...._list
+3. remove tmp/cache/persistent/myapp_cake_core_method_cache
+4. change price conf
 
 [git help]
 1. 'git add new_file_name' to add new file
@@ -28,4 +30,7 @@ mysql> select date_add(now(), interval '1,2' YEAR_MONTH);
     else if old file is changed, 'git commit -a' to commit changes to local
 3. 'git push -u origin master' to commit to master
 
+[define]
+1. cake_ports
+    status 0=>idel, 1=>user, 2=>error, 3=>trial_port, 4=>merchant
 

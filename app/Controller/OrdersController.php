@@ -338,7 +338,7 @@ else {
         // volatile fields: show_url, out_trade_no, price, subject
         $order_param = array(
             'out_trade_no' => $out_trade_no,
-            'subject' => 'subject description',
+            'subject' => '倚天剑-shadowsocks账号购买/续费',
             'price' => $total_price,
             'show_url' => $show_url,
         );
@@ -524,7 +524,7 @@ return $html_text;
                 );
                 $updateConditions = array(
                     'out_trade_no' => $out_trade_no,
-                    'uid' => $uid,
+                    // 'uid' => $uid,
                 );
                 $up_res = $this->Order->updateAll(
                     $updateFields,

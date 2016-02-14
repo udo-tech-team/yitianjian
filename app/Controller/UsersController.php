@@ -127,6 +127,7 @@ class UsersController extends AppController
                 //var_dump($uid); //null
                 //var_dump($save_res['User']['uid']); //userid
                 $this->Session->write('uid', $uid);
+                $this->Session->write('username', $rdata['email']);
                 //unset vcode to avoid attack
                 $this->Session->write('vcode', '');
                //var_dump($this->Session->read('uid'));
@@ -215,7 +216,7 @@ class UsersController extends AppController
               }
               //find first available port
               $avail_port = $this->Port->find('first',
-                    array('conditions'=>array('status' => 0, 'uid' => 0),
+                    array('conditions'=>array('status' => 0, 'uid' => 0, 'mtid' => 0),
                         'fields' => array('id', 'ssport')
                     )
                 );
@@ -295,6 +296,11 @@ class UsersController extends AppController
             $log_str = sprintf('uid[%s] order_id[%s] is_paid[%s] up_res[%s]', 
                     $uid, $paid_order['id'], $this->PAID_AND_UPDATED, $up_res);
             CakeLog::write('info', $log_str);
+        } else {
+            // unrecognized type
+            $log_str = sprintf('uid[%s] order_id[%s] unrecognized acctype[%s]', 
+                    $uid, $paid_order['id'], $paid_order['acctype']);
+            CakeLog::write('warning', $log_str);
         }
         return true;
     }
@@ -316,7 +322,8 @@ class UsersController extends AppController
         $order_rec = $this->Order->find('first',
             array(
                 'conditions' => array('uid' => $uid, 
-                'is_paid' => $this->ALREADY_PAID),
+                        'is_paid' => $this->ALREADY_PAID),
+                'order' => array('id' => 'DESC'),
             )
         );
 
@@ -367,7 +374,6 @@ class UsersController extends AppController
                     'conditions'=>array(
                         'id' => $mtorder_res['Mtorder']['port_id'],
                         'status' => $this->PORT_IN_USE,
-                        'uid >' => 0,
                         ),
                     )
             );
@@ -394,6 +400,10 @@ class UsersController extends AppController
 
         $this->set('title_for_layout', "User::ucenter");
         $this->layout = "ucenter";
+
+        $log_str = sprintf('uid[%s] ip[%s] in ucenter page', 
+                $uid, $this->request->clientIp());
+        CakeLog::write('info', $log_str);
     }
 
     function buy_acc() {
@@ -402,6 +412,9 @@ class UsersController extends AppController
         $this->set('acctype', $this->USER_BUY_NEW);
 
         $uid = $this->Session->read('uid');
+        $log_str = sprintf('uid[%s] ip[%s] in buy_acc page', 
+                $uid, $this->request->clientIp());
+        CakeLog::write('info', $log_str);
         // if not logged in
         if (empty($uid)) {
             $this->redirect(
@@ -417,6 +430,10 @@ class UsersController extends AppController
 
         $uid = $this->Session->read('uid');
         $username = $this->Session->read('username');
+
+        $log_str = sprintf('uid[%s] username[%s] ip[%s] in renew_acc page', 
+                $uid, $username, $this->request->clientIp());
+        CakeLog::write('info', $log_str);
         // if not logged in
         if (empty($uid)) {
             $this->redirect(
@@ -430,6 +447,8 @@ class UsersController extends AppController
 
     private function get_current_port($uid, $username) {
         if (!$uid || !$username) {
+            $log_str = sprintf('uid[%s] username[%s]', $uid, $username);
+            CakeLog::write('debug', $log_str);
             return;
         }
         $this->loadModel('Port');
@@ -467,7 +486,6 @@ class UsersController extends AppController
                     'conditions'=>array(
                         'id' => $mtorder_res['Mtorder']['port_id'],
                         'status' => $this->PORT_IN_USE,
-                        'uid >' => 0,
                         ),
                     )
             );
@@ -536,7 +554,7 @@ class UsersController extends AppController
 
               //find first available port
               $avail_port = $this->Port->find('first',
-                    array('conditions'=>array('status' => 0, 'uid' => 0),
+                    array('conditions'=>array('status' => 0, 'uid' => 0, 'mtid' => 0),
                         'fields' => array('id', 'ssport')
                     )
                 );
@@ -618,6 +636,9 @@ class UsersController extends AppController
         $this->layout = "message";
 
 //        var_dump($records);
+        $log_str = sprintf('uid[%s], ip[%s] in save advice',
+             CakeSession::read('uid'), $this->request->clientIp());
+        CakeLog::write('info', $log_str);
 
         if ($this->request->is('post')) {
             $rdata = $this->request->data;

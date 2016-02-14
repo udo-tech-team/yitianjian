@@ -10,8 +10,9 @@ class ShangjiaController extends AppController
     var $PORT_UID_PREFIX = 10000;
 
     public function index() {
-        $this->layout = 'shangjia';
-        $this->view = 'empty';
+        return $this->redirect(
+            array("controller" => "shangjia", "action" => "scenter")
+            );
     }
 
     public function login() {
@@ -20,6 +21,9 @@ class ShangjiaController extends AppController
         $errNo = 0;
         $errMsg = 'non';
 
+        $log_str = sprintf('in merchant login,ip[%s]', 
+                $this->request->clientIp());
+        CakeLog::write('info', $log_str);
         // already logged in
         if (!empty($suid)) {
             return $this->redirect(
@@ -94,9 +98,9 @@ class ShangjiaController extends AppController
     }
 
     function logout() {
-        $log_str = sprintf("merchant logout, id[%s]", 
-            CakeSession::read('suid'));
-        CakeLog::write($log_str);
+        $log_str = sprintf("merchant logout, id[%s] ip[%s]", 
+            CakeSession::read('suid'), $this->request->clientIp());
+        CakeLog::write('info', $log_str);
         CakeSession::destroy();
         return $this->redirect(
                 array("controller" => "shangjia", "action" => "login")
@@ -180,6 +184,9 @@ class ShangjiaController extends AppController
                 )
             )
         );
+
+        $log_str = sprintf('mtid[%s] in scenter', $suid);
+        CakeLog::write('info', $log_str);
         $this->set('today_total', $today_total[0]['today_total']);
 
     }
@@ -236,7 +243,7 @@ class ShangjiaController extends AppController
                 // get an available port
                 $avail_port = $this->Port->find('first',
                     array(
-                        'conditions' => array('status' => 0, 'uid' => 0),
+                        'conditions' => array('status' => 0, 'uid' => 0, 'mtid' => 0),
                         'order' => array('id' => 'DESC'),
                     )
                 );
@@ -251,7 +258,7 @@ class ShangjiaController extends AppController
                 $expire_time = date('Y-m-d H:i:s', strtotime("+$ss_month month"));
                 $update_fields = array(
                     'status' => 1,
-                    'uid' => $this->PORT_UID_PREFIX + $suid,
+                    'mtid' => $suid,
                     'modified' => 'now()',
                     'expire' => "'" . $expire_time . "'",
                 );
@@ -282,7 +289,7 @@ class ShangjiaController extends AppController
                 $up_res = $this->Mtorder->updateAll(
                     $up_fields, $up_cond
                 );
-                $info_log = sprintf("mt_id[%s] update order id[%s] res[%s]",
+                $info_log = sprintf("release account mt_id[%s] update order id[%s] res[%s]",
                         $suid, $order_id, $up_res);
                 CakeLog::write('info', $info_log);
 
@@ -300,6 +307,9 @@ class ShangjiaController extends AppController
             $this->set("charge_price", $charge_price / $this->CENTS_PER_YUAN);
             $this->set("ss_month", $rdata['ss_month']);
         }
+
+        $log_str = sprintf('mtid[%s] in release_account page', $suid);
+        CakeLog::write('info', $log_str);
 
     }
 
@@ -358,6 +368,9 @@ class ShangjiaController extends AppController
         $this->set("month_orders", $month_orders);
         $this->set('history_orders', $history_orders);
         $this->set("CENTS_PER_YUAN", $this->CENTS_PER_YUAN);
+
+        $log_str = sprintf('mtid[%s] in border_stat page', $suid);
+        CakeLog::write('info', $log_str);
     }
 
     function merchant_info() {
@@ -394,6 +407,20 @@ class ShangjiaController extends AppController
             );
 
         $this->set('login_records', $mt_logins);
+
+        // get merchant ss account
+        $this->loadModel('Port');
+        $merchant_port = $this->Port->find('first',
+            array(
+                'conditions' => array('status' => 4, 'mtid' => $suid),
+                'order' => array('id' => 'DESC'),
+            )
+        );
+
+        $this->set('port', $merchant_port['Port']);
+
+        $log_str = sprintf('mtid[%s] in merchant_info page', $suid);
+        CakeLog::write('info', $log_str);
     }
 
     function change_pass() {
@@ -453,6 +480,8 @@ class ShangjiaController extends AppController
                 $header = "成功";
                 $content = "恭喜！修改成功！";
                 $info_kind = "positive";
+                $log_str = sprintf('merchant[uid:%s] update pass succ', $suid);
+                CakeLog::write('info', $log_str);
             } while (0);
 
             $this->set_message($header, $content, $info_kind);

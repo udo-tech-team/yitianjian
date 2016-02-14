@@ -214,7 +214,7 @@
                 <div class="col-lg-12 text-center">
                     <h2>软件下载</h2>
                     <hr class="star-light">
-                    <h4><font color="red">需要在浏览器中打开链接!!!</font></h4>
+                    <h4><font color="purple">下载请在浏览器中打开链接!!!部分官方下载需要翻墙</font></h4>
                 </div>
             </div>
             <div class="row">
@@ -223,16 +223,16 @@
                 ['alt' => 'shadowsocks-windows-circle', 
                 'class' => 'img-responsive img-centered']); ?>
                     <h3>Windows</h3>
-                    <p>Win7及以下<a href="https://github.com/shadowsocks/shadowsocks-csharp/releases/download/2.5.6/Shadowsocks-win-2.5.6.zip" 
+                        <p>Win7及以下<a href="<?php echo Configure::read('ssclient.win7_url_official'); ?>" 
         class="btn btn-info"  target="_blank">
                         <i class="fa fa-download"></i> 官方下载 
-                    </a>  <a href="http://pan.baidu.com/s/1c05CZT2" class="btn btn-info" target="_blank">
+                        </a>  <a href="<?php  echo Configure::read('ssclient.win7_url_bdpan'); ?>" class="btn btn-info" target="_blank">
                         <i class="fa fa-download"></i> 百度网盘 
                     </a></p>
-                    <p>Win8及以上<a href="https://github.com/shadowsocks/shadowsocks-csharp/releases/download/2.5.6/Shadowsocks-win-2.5.6.zip" 
+                    <p>Win8及以上<a href="<?php echo Configure::read('ssclient.win7_url_official'); ?>" 
         class="btn btn-info"  target="_blank">
                         <i class="fa fa-download"></i> 官方下载 
-                    </a>  <a href="http://pan.baidu.com/s/1c05CZT2" class="btn btn-info" target="_blank">
+                    </a>  <a href="<?php echo Configure::read('ssclient.win7_url_bdpan'); ?>" class="btn btn-info" target="_blank">
                         <i class="fa fa-download"></i> 百度网盘 
                     </a></p>
                 </div>
@@ -241,10 +241,10 @@
                 ['alt' => 'shadowsocks-android-circle', 
                 'class' => 'img-responsive img-centered']); ?>
                     <h3>Android</h3>
-                            <p><a href="https://play.google.com/store/apps/details?id=com.github.shadowsocks" class="btn btn btn-info"  target="_blank">
+                            <p><a href="<?php echo Configure::read('ssclient.google_play_url'); ?>" class="btn btn btn-info"  target="_blank">
                                 <i class="fa fa-download"></i> Google Play
                             </a></p>
-                            <p><a href="http://pan.baidu.com/s/1jGwDrIu" class="btn btn btn-info"  target="_blank">
+                            <p><a href="<?php echo Configure::read('ssclient.android_bdpan'); ?>" class="btn btn btn-info"  target="_blank">
                                 <i class="fa fa-download"></i> 百度网盘
                             </a></p>
                         </div>
@@ -256,10 +256,10 @@
                 ['alt' => 'shadowsocks-mac-os-x-circle', 
                 'class' => 'img-responsive img-centered']); ?>
                     <h3>Mac OS X</h3>
-                            <p><a href="http://sourceforge.net/projects/shadowsocksgui/files/dist/ShadowsocksX-2.6.3.dmg" class="btn btn btn-info"  target="_blank">
+                            <p><a href="<?php echo Configure::read('ssclient.mac_os_official'); ?>" class="btn btn btn-info"  target="_blank">
                                 <i class="fa fa-download"></i> 官方下载
                             </a></p>
-                            <p><a href="http://pan.baidu.com/s/1pJAGlB1" class="btn btn btn-info"  target="_blank">
+                            <p><a href="<?php echo Configure::read('ssclient.mac_os_bdpan'); ?>" class="btn btn btn-info"  target="_blank">
                                 <i class="fa fa-download"></i> 百度网盘
                             </a></p>
                         </div>
@@ -268,10 +268,10 @@
                 ['alt' => 'shadowsocks-apple-circle', 
                 'class' => 'img-responsive img-centered']); ?>
                             <h3>iPhone/iPad</h3>
-                            <p><a href="https://itunes.apple.com/tc/app/shadowsocks/id665729974?mt=8" class="btn btn-info"  target="_blank">
+                            <p><a href="<?php echo Configure::read('ssclient.ios_app_store'); ?>" class="btn btn-info"  target="_blank">
                                 <i class="fa fa-download"></i> AppStore
                             </a></p>
-                            <p><a href="http://apt.thebigboss.org/repofiles/cydia/debs2.0/shadowsocks_0.3.2-3.deb" class="btn btn-info"  target="_blank">
+                            <p><a href="<?php echo Configure::read('ssclient.ios_yueyu'); ?>" class="btn btn-info"  target="_blank">
                                 <i class="fa fa-download"></i> 越狱版
                             </a></p>
                         </div>
@@ -359,7 +359,8 @@ echo "hello";
                 ['alt' => 'shadowsocks-windows', 
                 'class' => 'img-responsive img-centered']); ?>
                             <h4>Step1，下载shadowsocks软件</h4>
-                            <p>百度网盘<strong><a href="http://pan.baidu.com/s/1qW5dpyk" target="_blank">Win7及以下点这里</a></strong>    <strong><a href="http://pan.baidu.com/s/1pJxDI3L" target="_blank">Win8点这里</a></strong></p>
+                                <p>百度网盘<strong><a href="<?php echo Configure::read('ssclient.win7_url_bdpan'); ?>" target="_blank">Win7及以下点这里</a></strong>
+                            <strong><a href="<?php echo Configure::read('ssclient.win7_url_bdpan'); ?>" target="_blank">Win8点这里</a></strong></p>
                             <h4>Step2，解压到任意目录，运行其中的shadowsocks.exe</h4>
                 <?php echo $this->Html->image('tutorial/img/tutorials/windows_shadowsocks_01.png', 
                 ['alt' => 'shadowsocks-windows-01', 
@@ -408,8 +409,8 @@ echo "hello";
                 ['alt' => 'shadowsocks-android-00', 
                 'class' => 'img-responsive img-centered']); ?>
                             <h4>Step1，下载安卓的shadowsocks软件，安卓上叫“影梭”</h4>
-                            <p><strong><a href="http://pan.baidu.com/s/1sj5HHUl" target="_blank">百度网盘apk下载地址</a></strong></p>
-                            <p><strong><a href="https://play.google.com/store/apps/details?id=com.github.shadowsocks" target="_blank">Google Play下载地址</a></strong></p>
+                            <p><strong><a href="<?php echo Configure::read('ssclient.android_bdpan'); ?>" target="_blank">百度网盘apk下载地址</a></strong></p>
+                            <p><strong><a href="<?php echo Configure::read('ssclient.google_play_url'); ?>" target="_blank">Google Play下载地址</a></strong></p>
                             <h4>Step2，安装下载的apk文件，安装完成后打开“影梭”</h4>
                 <?php echo $this->Html->image('tutorial/img/tutorials/android_shadowsocks_01.png', 
                 ['alt' => 'shadowsocks-android-01', 
@@ -462,7 +463,7 @@ echo "hello";
                 ['alt' => 'shadowsocks-mac-00', 
                 'class' => 'img-responsive img-centered']); ?>
                             <h4>Step1，下载用于Mac OS X的shadowsocksX软件</h4>
-                            <p><strong><a href="http://pan.baidu.com/s/1jGxO0cA" target="_blank">百度网盘dmg下载地址</a></strong></p>
+                            <p><strong><a href="<?php echo Configure::read('ssclient.mac_os_bdpan'); ?>" target="_blank">百度网盘dmg下载地址</a></strong></p>
                             <h4>Step2，打开下载的dmg文件，将程序图标拖到右边的Applications，安装完成</h4>
                 <?php echo $this->Html->image('tutorial/img/tutorials/mac_shadowsocks_01.png', 
                 ['alt' => 'shadowsocks-mac-01', 

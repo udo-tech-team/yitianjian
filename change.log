@@ -1,3 +1,10 @@
+#features
+script:
+    update merchant_port[many]. new merchant registered/added, script will auto allocate merchant_port.
+    update trial_port[one]. if there is no trial_port in cake_ports, script will auto allocate trial_port
+    update user_port[many].
+
+
 Revision: 1, ==> new version:
 1.add hongbao marketing strategy
 2.add related tables. a.cake_coupons, cake_consumes
@@ -23,11 +30,11 @@ Revision xx, ==> fix cake_users uid to id
 2. border_stat [all] -> done
 3. release account[all] -> done
 
-#TODO -> 2016.2.10
+#TODO -> 2016.2.10 all done
 1. in users controller, allow user register/login with email or telephone as username -> done
-2. change all download urls configurable.
-3. add debug log in ShangjiaController
-4. python script to periodically modify trial_port password
+2. change all download urls configurable. -> done
+3. add debug log in ShangjiaController -> done
+4. python script to periodically modify trial_port password -> done
 5. if a user buys an account from the delegate, and register/login, 
     automatically retrieve the account for him/her in ucenter  -> done
 6. enable user buy/renew port -> done
@@ -35,3 +42,16 @@ Revision xx, ==> fix cake_users uid to id
 
 #TODO -> 2016.2.14
 1. optimize page loading speed, remove useless resource links
+2. in cake_ports add mtid field to tell users/merchants apart -> done
+
+
+#newly put online 2016.2.14
+# new feature:
+#   1. user buy/renew port
+#   2. merchant delegate port
+#   3. script crontab update port
+1. update newest code
+2. import tables/fields, set trial_port, crontab init merchant_port
+    add a merchant test account
+    remove cache files[myapp_xxx_list, persistent/..method..]
+3. open all pages for test

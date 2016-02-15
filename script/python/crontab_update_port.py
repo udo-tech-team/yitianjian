@@ -150,7 +150,7 @@ class UpdatePort:
             logging.info(log_str)
 
             # update cake_ports
-            update_query = 'update cake_ports set status = 0, uid = 0, modified=now() where id = %d' \
+            update_query = 'update cake_ports set status = 0, uid = 0, mtid=0, modified=now() where id = %d' \
                     % (rec[0])
             #exec_res = 1
             exec_res = self.dbObj.exec_query(update_query)

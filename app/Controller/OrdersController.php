@@ -5,7 +5,6 @@ class OrdersController extends AppController
     var $name = "Orders";  // relative to class name
     public $monthly_price = 9.9;
     public $NOT_PAID_ORDER_LIMIT = 10; // if exceed limit, deny create order
-    public $ORDER_ALREADY_PAID = 1;
     public $CENT_PER_YUAN = 100; // convert yuan to cent
     var $components = array(
             'Session',
@@ -13,6 +12,9 @@ class OrdersController extends AppController
                         'csrfUseOnce' => false
                             ),
     );
+
+    private $ORDER_ALREADY_PAID = 1;
+    private $NOT_PAID = 0;
 
     //add security xx=>false to allow cross controller session
     //add beforeFilter to allow post register data
@@ -85,7 +87,9 @@ if($verify_result) {//验证成功
         );
         $updateConditions = array(
             'out_trade_no' => $out_trade_no,
+            'is_paid' => $this->NOT_PAID,
         );
+
         $up_res = $this->Order->updateAll(
             $updateFields,
             $updateConditions
@@ -524,6 +528,7 @@ return $html_text;
                 );
                 $updateConditions = array(
                     'out_trade_no' => $out_trade_no,
+                    'is_paid' => $this->NOT_PAID,
                     // 'uid' => $uid,
                 );
                 $up_res = $this->Order->updateAll(

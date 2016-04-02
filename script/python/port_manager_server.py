@@ -7,6 +7,8 @@ import time
 import sys
 import logging
 import ConfigParser
+import threading
+tlock = threading.RLock()
 
 #################################
 #
@@ -22,6 +24,30 @@ import ConfigParser
 #
 #################################
 
+logging.basicConfig(level=logging.DEBUG,
+            format='%(asctime)s %(filename)s[%(lineno)d] %(levelname)s %(message)s',
+            datefmt='%d %b %Y %H:%M:%S',
+            filename='./logs/port_manager_server.log',
+            filemode='a')
+
+class PortActivityLog(threading.Thread):
+    """ log ports activities"""
+    # socket file Command Line
+    cli = None
+    def __init__(self, cli):
+        threading.Thread.__init__(self)
+        self.cli = cli
+
+    def run(self):
+        count = 0
+        st_interval = 10
+        while True:
+            tlock.acquire()
+            recv_str = '%s > %s' % (count, self.cli.recv(1506))
+            logging.info(recv_str)
+            tlock.release()
+            time.sleep(st_interval)
+
 class PortManagerServer:
     """ manage ssserver port """
     conf = {}
@@ -31,11 +57,7 @@ class PortManagerServer:
     timeout = 10
 
     def __init__(self):
-        logging.basicConfig(level=logging.DEBUG,
-            format='%(asctime)s %(filename)s[%(lineno)d] %(levelname)s %(message)s',
-            datefmt='%d %b %Y %H:%M:%S',
-            filename='./logs/port_manager_server.log',
-            filemode='a')
+        pass
 
     def load_conf(self):
         cf = ConfigParser.ConfigParser()
@@ -70,6 +92,9 @@ class PortManagerServer:
         logging.info(log_str)
 
     def serve_forever(self):
+        log_thread = PortActivityLog(self.cli)
+        log_thread.start()
+        logging.info('start port_activity_log thread succ.')
         while True:
             conn, addr = self.sock.accept()
             log_str = '%s addr:%s' % (conn, addr)
@@ -91,9 +116,11 @@ class PortManagerServer:
                     if split_arr[0] == self.conf['password']:
                         # password match, exec cmd
                         cmd = split_arr[1]
+                        tlock.acquire()
                         self.cli.send(cmd)
                         res = self.cli.recv(1506)
                         conn.sendall(res)
+                        tlock.release()
                     else:
                         # password unmatch, send default response
                         log_str = 'recv passwd[%s]' % (split_arr[0])
@@ -106,6 +133,7 @@ class PortManagerServer:
                     break;
             if conn:
                 conn.close()
+        log_thread.join()
 
     def server_start(self):
         # make sure load_conf exec first

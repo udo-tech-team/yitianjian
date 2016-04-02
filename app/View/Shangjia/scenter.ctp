@@ -124,5 +124,25 @@
 
 </div>  <!-- segment end-->
 
+<div class="ui segment"> <!-- segment begin-->
+  <h3 class="ui top attached large label">网址导航</h3>
+  <!-- button area begin -->
+  <div class="ui orange fluid four item inverted menu">
+    <a class="item" target="_blank" href="http://www.facebook.com">脸书</a>
+    <a class="item" target="_blank" href="http://www.google.com">谷歌</a>
+    <a class="item" target="_blank" href="http://www.youtube.com">优土必</a>
+    <a class="item" target="_blank" href="http://www.twitter.com">推特</a>
+  </div>
+
+  <div class="ui blue fluid four item inverted menu">
+    <a class="item" target="_blank" href="http://scholar.google.com">谷歌学术</a>
+    <a class="item" target="_blank" href="http://www.gmail.com">Gmail</a>
+    <a class="item" target="_blank" href="http://www.blogspot.com">Blogspot</a>
+    <a class="item" target="_blank" href="http://www.nytimes.com">纽约时报</a>
+  </div>
+  <!-- button area end -->
+
+</div>  <!-- segment end-->
+
 </div>  <!-- segments end-->
 </div>  <!-- container end-->

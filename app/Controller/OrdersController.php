@@ -265,6 +265,24 @@ else {
         $monthly_netflow = 0;
         $acctype = '';
         do {
+            // if refer unexpected
+            $refer = 'empty';
+            if (isset($_SERVER['HTTP_REFERER'])) {
+                $refer = $_SERVER['HTTP_REFERER'];
+            }
+            $log_str = sprintf("alicreate. refer=[%s]", $refer);
+            CakeLog::write('info', $log_str);
+
+            $domain = Configure::read('domain_name');
+            if (strpos($refer, $domain) === false) {
+                $errNo = 4;
+                $htext = '出错啦！';
+                $detail_info = '请在ashadowsocks账号页面购买';
+                $log_str = sprintf("domain_name[%s] refer[%s] unmatch",
+                        $domain, $refer);
+                CakeLog::write('warning', $log_str);
+                break;
+            }
             // if not post request, return
             if (!$this->request->is('post')) {
                 // var_dump(Configure::read('order'));
@@ -305,7 +323,7 @@ else {
             $monthly_netflow = $account_types[$acctype]['monthly_netflow'];
             $not_paid_order_count = $this->get_not_paid_order_count();
             if ($not_paid_order_count >= $this->NOT_PAID_ORDER_LIMIT) {
-                $errNo = 4;
+                $errNo = 5;
                 $errInfo = 'user exists not paid order,uid=' . $uid
                     . ", not paid order count=" . $this->NOT_PAID_ORDER_LIMIT;
                 $htext = '出错啦！';

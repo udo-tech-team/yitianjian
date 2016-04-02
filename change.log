@@ -55,3 +55,15 @@ Revision xx, ==> fix cake_users uid to id
     add a merchant test account
     remove cache files[myapp_xxx_list, persistent/..method..] 
 3. open all pages for test -> done
+
+#TODO -> 2016.2.17
+1. if an user buy an account and ask to refund, reset the account
+2. limit merchant maxmum orders per day
+
+#TODO -> 2016.2.24
+1. shangjia ask for telephone/email
+2. users find back password
+
+#TODO -> 2016.2.25
+1. fix alipay attack creating orders without offical 
+    domain but an ip -> done

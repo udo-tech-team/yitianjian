@@ -96,12 +96,14 @@ class PagesController extends AppController {
         $this->layout = 'home';
         $this->set('title_for_layout', 'titlexxxxx');
         $this->set("show_goods_list", $this->show_goods_list);
-        $log_str = 'in homepage, client ip:' . $this->request->clientIp();
+        $log_str = sprintf('[%s/%s:%s]in homepage, client ip:%s', 
+                __CLASS__, __FUNCTION__, __LINE__,
+                $this->request->clientIp());
         $refer = 'not set';
         if (isset($_SERVER['HTTP_REFERER'])) {
             $refer = $_SERVER['HTTP_REFERER'];
         }
-        $log_str .= ', refer:' . $refer;
+        $log_str = sprintf('%s, refer:%s', $log_str, $refer);
         CakeLog::write('debug', $log_str);
         //$this->log(sprintf('request for homepage, %s,uid=%s', 'webroot/', CakeSession::read('uid')), 'debug');
 

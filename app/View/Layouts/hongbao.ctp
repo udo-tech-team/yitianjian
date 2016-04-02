@@ -26,7 +26,7 @@
     <div class="red-jg">
         <h1>恭喜您！</h1>
         <h1 align="center">获得￥<?php echo $this->Session->read('money'); ?></h1>
-        <h3 align="center">科学上（翻）网（墙）账号￥<?php echo $money_per_month; ?>/月</h3>
+        <h3 align="center">科学上（翻）网（墙）账号￥<?php echo $this->get('money_per_month'); ?>/月</h3>
     </div>
 </div>
 <!-- End 红包 -->

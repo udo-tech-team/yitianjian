@@ -36,6 +36,7 @@ class UpdatePort:
     TRIAL_PORT_CRONTAB = 'trial_port_crontab'
     EXPIRED_CRONTAB = 'expired_crontab'
     MERCHANT_CRONTAB = 'merchant_crontab'
+    ACCIDENT_RECOVER = 'accident_recover'
     # trial_port status
     trial_status = 3
     # merchant_port status
@@ -82,6 +83,40 @@ class UpdatePort:
         self.GOON = False
         log_str = 'exception occurs[%s]' % (e)
         logging.warning(log_str)
+
+    def insert_port(self, port, password):
+        """ insert an account in ssserver, port/password as param"""
+        if not self.GOON:
+            logging.warning('GOON is false, stop.')
+            return False
+        # insert an account, with port / password
+        # 1. remove port 2. add the removed port 
+        cmd = 'remove:{"server_port":' + str(port) + '}'
+        net_str = self.conf['password'] + self.conf['pass_cmd_seperator'] + cmd
+        self.sock.sendall(net_str)
+        exec_res = self.sock.recv(1024)
+
+        log_str = '[%s] exec res[%s]' % (net_str, exec_res)
+        if exec_res != 'ok':
+            logging.critical(log_str)
+            return False
+        else:
+            logging.info(log_str)
+
+        cmd = 'add:{"server_port":' + str(port) + ',"password":"' + password + '"}'
+        net_str = self.conf['password'] + self.conf['pass_cmd_seperator'] + cmd
+        self.sock.sendall(net_str)
+        exec_res = self.sock.recv(1024)
+
+        log_str = '[%s] exec res[%s]' % (net_str, exec_res)
+        if exec_res != 'ok':
+            logging.critical(log_str)
+            return False
+        else:
+            logging.info(log_str)
+
+        return True
+
 
     def update_port(self, rec):
         if not self.GOON:
@@ -334,6 +369,46 @@ class UpdatePort:
                     % (e, sys.exc_info(), traceback.print_exc())
             logging.warning(log_str)
 
+    def accident_recover(self):
+        # this is not a crontab
+        if not self.GOON:
+            logging.warning('GOON is false, stop.')
+            return
+        try:
+            self.dbObj = Database.MysqlObj()
+            sql_query = 'select ssport, sspass from cake_ports'
+            count, all_res = self.dbObj.find_all(sql_query)
+            log_str = 'query[%s] record count[%d]' % (sql_query, count)
+            if count >= 1:
+                # merchant exists
+                logging.info(log_str)
+
+                total_count = 0
+                succ_count = 0
+                for rec in all_res:
+                    # get merchant port record
+                    insert_res = self.insert_port(rec[0], rec[1])
+                    if not insert_res:
+                        logging.critical("insert port failed. port[%s] pass[%s]" \
+                                % (rec[0], rec[1]))
+                    else:
+                        logging.info("insert port succ. port[%s] pass[%s]" \
+                                % (rec[0], rec[1]))
+                        succ_count += 1
+
+                    total_count += 1
+
+                logging.info("finished insert. total[%s] succ[%s]" \
+                        % (total_count, succ_count))
+
+            else:
+                #no merchants
+                logging.warning(log_str)
+        except Exception as e:
+            log_str = 'exception occurs, [%s] sys[%s] traceback[%s]' \
+                    % (e, sys.exc_info(), traceback.print_exc())
+            logging.warning(log_str)
+
     def client_start(self):
         self.load_conf()
         self.init_sock()
@@ -343,6 +418,8 @@ class UpdatePort:
             self.update_trial_port()
         elif sys.argv[1] == self.MERCHANT_CRONTAB:
             self.update_merchant_port()
+        elif sys.argv[1] == self.ACCIDENT_RECOVER:
+            self.accident_recover()
 
 if __name__ == "__main__" :
     #print sys.argv, len(sys.argv)
@@ -350,4 +427,4 @@ if __name__ == "__main__" :
     #uptp.reset_expired_port()
     uptp.client_start()
 
-    logging.info('run crontab_update_port finished')
+    logging.info('run finished')

@@ -12,7 +12,7 @@
       </div>
   
       <div class="left aligned column">
-            <?php echo $this->get('ssip'); ?>
+            <?php echo $this->get('account_rec')['sshost']; ?>
       </div>
     </div>
 
@@ -77,11 +77,17 @@
   <!-- list area begin -->
   <div class="ui bulleted list">
   
-    <!--div class="item">
+    <div class="item">
       <div class="content">
-        <div class="header">用户可通过留下的手机号码+商家手机号查询上面的账号信息</div>
+        <div class="header">此页面不能刷新，刷新会再发放一个新的账号！</div>
       </div>
-    </div-->
+    </div>
+  
+    <div class="item">
+      <div class="content">
+        <div class="header">用户可通过留下的手机号在“倚天剑”网站注册后，登录查询上面的账号信息</div>
+      </div>
+    </div>
 
     <div class="item">
       <div class="content">

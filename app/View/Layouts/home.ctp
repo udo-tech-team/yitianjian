@@ -138,7 +138,7 @@
                         
                     <dl>
                         <dt>倚天剑</dt>
-                        <dd>发布shadowsocks科学上网（翻墙）账号的平台！</dd>
+                        <dd>发布shadowsocks科学上网（翻*墙）账号的平台！</dd>
                     </dl>
                     <dl>
                         <dt>傻瓜式</dt>
@@ -146,11 +146,50 @@
                     </dl>
                     <dl>
                         <dt>注册即送体验vip账号</dt>
-                        <dd>活动期间，注册账号即送vip体验账号，让您翻墙畅游！</dd>
+                        <dd>活动期间，注册账号即送vip体验账号，让您翻*墙畅游！</dd>
                     </dl>
                 </div>
             </div>
         </div>
+
+        <div class="row home-wrap">
+          <div class="col-md-4">
+            <h2>多终端</h2>
+            <p>支持windows/mac/ios/android访问国外优秀网站畅通无阻！</p>
+            <p><a href="<?php 
+                echo $this->Html->url([
+                    'controller' => 'tutorial'
+                ]);
+            ?>" class="btn btn-info btn-large">了解更多</a></p>
+          </div>
+
+          <div class="col-md-4">
+            <h2>傻瓜式</h2>
+            <p>无需要任何技术基础，按照教程一步一步设置，即可翻越城墙！</p>
+            <p><a href="<?php 
+                    echo $this->Html->url([
+                    'controller' => 'tutorial',
+                    'action' => 'trial_port',
+                    '#' => 'tutorials'
+                            ]);
+            ?>" class="btn btn-primary btn-large">查看教程</a></p>
+          </div>
+
+          <div class="col-md-4">
+            <h2>免费体验</h2>
+            <p>本站提供免费体验账号，注册成功后送vip账号。</p>
+            <p><a href="<?php 
+                    echo $this->Html->url([
+                    'controller' => 'tutorial',
+                    'action' => 'trial_port',
+                    '#' => 'free'
+                            ]);
+            ?>" class="btn btn-success btn-large">免费体验</a></p>
+          </div>
+        </div>
+<br/><br/>
+
+<!--
         <div class="row home-wrap">
             <div align="center" style="margin-bottom:36px;">
                 <div class="btn-group">
@@ -176,7 +215,7 @@
                             ?>" class="btn btn-success">win/mac/apple/android客户端下载</a>
                 </div>
             </div>
-        </div>
+        </div> -->
 
                     <?php 
                         //if logged in
@@ -376,7 +415,7 @@
                     </div>
                     <div class="info">
                         <div class="name">小林 － 学生</div>
-                        <q>看youtube的视频，看国外新闻，这翻墙利器，必须的！</q>
+                        <q>看youtube的视频，看国外新闻，这翻*墙利器，必须的！</q>
                     </div>
                 </div>
 

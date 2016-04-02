@@ -4,7 +4,9 @@ class ExpandmarketController extends AppController
     var $layout = 'hongbao';
     var $name = 'Expandmarket';
     var $view = 'empty';
-    var $components = array('Session',
+    var $components = array(
+            'Session',
+            'Vcode',
             'Security' => array(
                     'csrfUseOnce' => false
                         )
@@ -12,6 +14,20 @@ class ExpandmarketController extends AppController
     //important !!!!!  solve this problem with costing hours
     //the Security in components must set when you want to use 
     //the same session cross pages/controllers;
+
+    //add security xx=>false to allow cross controller session
+    //add beforeFilter to allow post register data
+    public function beforeFilter() {
+        parent::beforeFilter();
+        if (isset($this->Security)) { //&& isset($this->Auth)) {
+            //$this->Auth->allow('index', 'register');
+            //$this->Security->config('unlockedActions', 'register');
+            $this->Security->validatePost = false;
+            $this->Security->enabled = false;
+            $this->Security->csrfCheck = false;
+        }
+    }
+
     function index() {
         $clientIp = $this->request->clientIp();
         $log_str = 'a visitor in hongbaoPage';
@@ -57,6 +73,63 @@ class ExpandmarketController extends AppController
         $log_str .= ', user_agent:' . $_SERVER["HTTP_USER_AGENT"];
         CakeLog::write('info', $log_str);
         $this->view = 'empty';
+    }
+
+    function house_policy() {
+        $this->layout = 'housing';
+        $this->view = 'userinfo';
+        $this->set('title_for_layout', "身价测试");
+    }
+
+    function save_housing_singles_info() {
+        $this->layout = 'empty';
+        $this->view = 'save_housing_singles_info';
+        $this->set('title_for_layout', "身价测试结果");
+
+        $isPost = $this->request->is('post');
+        $status = 'success';  // used in frontend
+        $err = 0; // no error 
+        $msg = "";
+        $ip = $this->request->clientIp();
+
+        if ($isPost) {
+            $rdata = $this->request->data;
+
+            $log_str = sprintf('checkcode[%s] vcode[%s]',
+                    $rdata['checkcode'], $this->Session->read('vcode'));
+            CakeLog::write('debug', $log_str);
+
+            do {
+              if (empty($rdata['checkcode'])
+                  || 0 != strcasecmp($rdata['checkcode'], 
+                  $this->Session->read('vcode'))) {
+                $err = 4;
+                $msg = '验证码错误！';
+                $status = 'error';
+                break;
+              }
+
+              // store data in db
+              $log_str = sprintf('tel[%s],gender[%s],uname[%s],birth_year[%s],ip[%s]',
+                  $rdata['telephone'], $rdata['gender'], 
+                  $rdata['uname'], $rdata['birth_year'], $ip);
+              CakeLog::write('info', $log_str);
+
+            } while (0);
+            // clear session to avoid attack
+            CakeSession::write('vcode', '');
+        }
+
+        $log_str = sprintf('in housing_user_info client_ip:[%s]', $ip);
+        CakeLog::write('debug', $log_str);
+
+        $this->set('errNo', $err);
+        $this->set('errMsg', $msg);
+    }
+
+    function vcode() {
+        $this->view = 'empty';
+        $this->Vcode->render();
     }
 }
 ?>

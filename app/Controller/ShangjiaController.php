@@ -298,6 +298,9 @@ class ShangjiaController extends AppController
                 $this->set('sspass', $avail_port['Port']['sspass']);
                 $this->set('ssip', $avail_port['Port']['ssip']);
 
+                // Port info all in account_rec
+                $this->set('account_rec', $avail_port['Port']);
+
             } else {
                 $wn_str = sprintf("save order failed, mt_id[%s] charge_price[%s]",
                         $suid, $charge_price);

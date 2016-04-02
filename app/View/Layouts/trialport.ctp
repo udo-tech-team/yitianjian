@@ -214,7 +214,7 @@
                 <div class="col-lg-12 text-center">
                     <h2>软件下载</h2>
                     <hr class="star-light">
-                    <h4><font color="purple">下载请在浏览器中打开链接!!!部分官方下载需要翻墙</font></h4>
+                    <h4><font color="purple">下载请在浏览器中打开链接!!!部分官方下载需要翻*</font></h4>
                 </div>
             </div>
             <div class="row">

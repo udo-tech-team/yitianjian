@@ -67,3 +67,7 @@ Revision xx, ==> fix cake_users uid to id
 #TODO -> 2016.2.25
 1. fix alipay attack creating orders without offical 
     domain but an ip -> done
+
+#TODO 2016.5.29
+1. add trial port
+2. script add auto delete/add trail port function

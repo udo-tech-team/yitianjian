@@ -432,10 +432,11 @@
              <a href="">服务条款</a> |
              <br /-->
 
-            &copy; 2016 gso.hk 倚天剑 All Rights Reserved.
+            &copy; 2016 gso.hk 倚天剑shadow  All Rights Reserved.
             <br />
 
-        沪ICP备15047922号
+        沪ICP备15047922号 客服QQ 3382558130 
+<a target="_blank" href="http://wpa.qq.com/msgrd?v=3&uin=3382558130&site=qq&menu=yes"><img border="0" src="http://wpa.qq.com/pa?p=2:3382558130:52" alt="咨询客服" title="咨询客服"/></a>
         </p>
         <p align="center">
         <?php 

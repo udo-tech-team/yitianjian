@@ -85,28 +85,75 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-lg-4 text-center">
-                    <!--
-                    <h4>A服务器地址:us1.iss.tf</h4>
-                    <h4>端口:8989</h4>
-<h4>A密码:28408319</h4>
-                    <h4>加密方式:aes-256-cfb</h4>
-                    <h4>状态:<font color="green">正常</font></h4>
-                    <h4><font color="red">注意：每6小时更换一次密码</font></h4>
-                    -->
+                <div class="col-lg-4 text-left">
+
+<?php 
+        $all_trial_ports = $this->get('all_trial_ports');
+        $ports_count = count($all_trial_ports);
+        $PORT_INVALID = 2;
+        $not_valid_message = "正被占用中";
+        // if exists second trail port
+        if ($ports_count > 1) {
+            $second_port = $all_trial_ports[1]['Port'];
+?>
+
+        <h4><p class="text-lowercase">服务器地址: 
+            <?php echo $second_port['sshost']; ?> </p>   </h4>
+        <h4>端口: <?php echo $second_port['ssport']; ?></h4>
+                    <div id="vip"></div>
+                    <h4><p class="text-lowercase">密码: 
+                        <?php echo $second_port['sspass']; ?></p></h4>
+                    <h4><p class="text-lowercase">加密方式: 
+                        <?php echo $second_port['ssencrypt']; ?></p></h4>
+                    <h4>状态: <?php if ($second_port['status'] != $PORT_INVALID): ?>
+                                <font color="green">正常 </font>
+<?php else:?>  
+                                <font color="red">正被占用中</font>
+
+<?php endif; ?>
+                    </h4>
+<?php
+        }
+?>
+
                 </div>
 		<div class="col-lg-4 text-left">
-        <h4><p class="text-lowercase">服务器地址: <?php echo $this->get('port')['sshost']; ?></p></h4>
-        <h4>端口: <?php echo $this->get('port')['ssport']; ?></h4>
+<?php
+        // if exists first port
+        if ($ports_count > 0) {
+            $first_port = $all_trial_ports[0]['Port'];
+?>
+        <h4><p class="text-lowercase">服务器地址: <?php echo $first_port['sshost']; ?></p></h4>
+        <h4>端口: <?php echo $first_port['ssport']; ?></h4>
                     <div id="vip"></div>
-                    <h4><p class="text-lowercase">密码: <?php echo $this->get('port')['sspass']; ?></p></h4>
-                    <h4><p class="text-lowercase">加密方式: <?php echo $this->get('port')['ssencrypt']; ?></p></h4>
-                    <h4>状态: <?php if ($this->get('port')): ?><font color="green">正常 </font><?php else:?>  异常<?php endif; ?></h4>
-                    <h4><font color="red">注意：每6小时更新一次密码</font></h4>
+                    <h4><p class="text-lowercase">密码: <?php echo $first_port['sspass']; ?></p></h4>
+                    <h4><p class="text-lowercase">加密方式: <?php echo $first_port['ssencrypt']; ?></p></h4>
+                    <h4>状态: <?php if ($first_port['status'] != $PORT_INVALID): ?>
+                                <font color="green">正常 </font>
+<?php else:?>  
+                                <font color="red">正被占用中</font>
+
+<?php endif; ?>
+                    </h4>
+                    <h4><font color="red">注意：不定期更新密码，请收藏网址以便随时查看</font></h4>
+<?php 
+        }
+        else {
+?>
+                    <h4><font color="red">对不起，目前不开放测试账号。</h4>
+<?php
+        }
+?>
                     <h4><font color="red"><a href="<?php 
-                    echo $this->Html->url('/');
+
+echo $this->Html->url(
+    array('controller' => 'users',
+        'action' => 'ucenter'
+        )
+    );
                         ?>">购买专用账号=>go</a></font></h4>
                 </div>
+
                 <div class="col-lg-4 text-center">
                     <!--
                     <h4>C服务器地址:hk3.iss.tf</h4>
@@ -123,7 +170,12 @@
                     <h3>shadowsocks vip帐号</h3>
                     <hr class="star-primary">
                     <h4><font color="red"><a href="<?php 
-                    echo $this->Html->url('/');
+
+echo $this->Html->url(
+    array('controller' => 'users',
+        'action' => 'ucenter'
+        )
+    );
                     ?>">购买专用账号=>go</a></font></h4>
                 </div>
             </div>
@@ -164,7 +216,7 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-sm-4 portfolio-item">
+                <div class="col-sm-3 portfolio-item">
                     <a href="#portfolioModal1" class="portfolio-link" data-toggle="modal">
                         <div class="caption">
                             <div class="caption-content">
@@ -177,7 +229,7 @@
                         <center><h3>Windows使用教程</h3></center>
                     </a>
                 </div>
-                <div class="col-sm-4 portfolio-item">
+                <div class="col-sm-3 portfolio-item">
                     <a href="#portfolioModal2" class="portfolio-link" data-toggle="modal">
                         <div class="caption">
                             <div class="caption-content">
@@ -190,7 +242,8 @@
                         <center><h3>Android使用教程</h3></certer>
                     </a>
                 </div>
-                <div class="col-sm-4 portfolio-item">
+
+                <div class="col-sm-3 portfolio-item">
                     <a href="#portfolioModal3" class="portfolio-link" data-toggle="modal">
                         <div class="caption">
                             <div class="caption-content">
@@ -201,6 +254,20 @@
                 ['alt' => 'shadowsocks-mac-1', 
                 'class' => 'img-responsive']); ?>
                         <center><h3>Macbook使用教程</h3></certer>
+                    </a>
+                </div>
+
+                <div class="col-sm-3 portfolio-item">
+                    <a href="#portfolioModal4" class="portfolio-link" data-toggle="modal">
+                        <div class="caption">
+                            <div class="caption-content">
+                                <i class="fa fa-search-plus fa-3x"></i>
+                            </div>
+                        </div>
+                <?php echo $this->Html->image('tutorial/img/portfolio/ipad_iphone2.png', 
+                ['alt' => 'shadowsocks-mac-1', 
+                'class' => 'img-responsive']); ?>
+                        <center><h3>iphone/ipad使用教程</h3></certer>
                     </a>
                 </div>
             </div>
@@ -323,10 +390,7 @@
             <div class="container">
                 <div class="row">
                     <div class="col-lg-12">
-                        Copyright &copy; shadowsocks 2015
-<?php
-echo "hello";
-?>
+                        Copyright &copy; ashadowsocks.com 2016
                     </div>
                 </div>
             </div>
@@ -445,6 +509,7 @@ echo "hello";
             </div>
         </div>
     </div>
+
     <div class="portfolio-modal modal fade" id="portfolioModal3" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-content">
             <div class="close-modal" data-dismiss="modal">
@@ -494,6 +559,56 @@ echo "hello";
                 'class' => 'img-responsive img-centered']); ?>
                             <p>Tips1 如果有网站打不开，或者图片刷不出来，切换全局试试</p>
                             <p>Tips2 同样可以编辑PAC，自定义通过服务器代理的网站</p>
+                            <button type="button" class="btn btn-default" data-dismiss="modal"><i class="fa fa-times"></i> 关闭并返回</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+   
+    <div class="portfolio-modal modal fade" id="portfolioModal4" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-content">
+            <div class="close-modal" data-dismiss="modal">
+                <div class="lr">
+                    <div class="rl">
+                    </div>
+                </div>
+            </div>
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-8 col-lg-offset-2">
+                        <div class="modal-body">
+                            <h2>Iphone / Ipad 设置使用shadowsocks教程</h2>
+                            <hr class="star-primary">
+                <?php echo $this->Html->image('tutorial/img/portfolio/ipad_iphone2.png', 
+                ['alt' => 'shadowsocks-app-store', 
+                'class' => 'img-responsive img-centered']); ?>
+                            <h4>Step1，在app store上搜索安装<strong>"shadowrocket"</strong>[需要付费6元]</h4>
+                            <p><strong><a href="<?php echo Configure::read('ssclient.iphone_ipad_client'); ?>" target="_blank">app store地址</a></strong></p>
+                <?php echo $this->Html->image('tutorial/img/tutorials/shadowrocket_app_store.jpg', 
+                ['alt' => 'shadowsocks-app-store', 
+                'class' => 'img-responsive img-centered']); ?>
+                            <p><strong>shadowrocket功能同shadowsockes.由于app store上的shadowsocks在中国区已下架，iphone / ipad设备已转战 shadowrocket</strong></p>
+                            <h4>Step2，配置ss帐号，可以直接左上角上角选择扫二维码添加。或者点右上角+号，输入ss帐号-端口-密码</h4>
+                <?php echo $this->Html->image('tutorial/img/tutorials/shadowrocket_add_ss_account.jpg', 
+                ['alt' => 'shadowsocks-add-ss-account', 
+                'class' => 'img-responsive img-centered']); ?>
+                            <h4>Step3，选择"settings"->"config"->"REMOTE FILES"</h4>
+                <?php echo $this->Html->image('tutorial/img/tutorials/shadowrocket_setting.jpg', 
+                ['alt' => 'shadowsocks-ipad/iphone-02', 
+                'class' => 'img-responsive img-centered']); ?>
+                            <h4>Step4，添加配置文件地址,图中红框的地址为：</h4>
+                            <p><strong><?php  echo Configure::read('ssclient.remote_file_conf'); ?></strong></p>
+                <?php echo $this->Html->image('tutorial/img/tutorials/shadowrocket_remote_conf.png', 
+                ['alt' => 'shadowsocks-iphone-ipad-03', 
+                'class' => 'img-responsive img-centered']); ?>
+                            <h4>Step5，点一下下载好配置文件，第一个是"preview"即查看，第二个是"use config"即使用，我们点下使用。然后打开谷歌</h4>
+                <?php echo $this->Html->image('tutorial/img/tutorials/iphone_google.jpg', 
+                ['alt' => 'shadowsocks-iphone-ipad-04', 
+                'class' => 'img-responsive img-centered']); ?>
+                            <h4>打开Safari或者Chrome开始上（翻）网（墙）吧</h4>
+                            <p>Tips: shadowrocket对iphone/ipad的移动设备不一定都支持。请在试用成功后，再购买vip账号，以免因不能使用而造成麻烦。</p>
                             <button type="button" class="btn btn-default" data-dismiss="modal"><i class="fa fa-times"></i> 关闭并返回</button>
                         </div>
                     </div>

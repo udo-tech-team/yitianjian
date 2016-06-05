@@ -3,7 +3,10 @@
   <head>
     <?php echo $this->Html->charset(); ?>
     <title><?php echo $this->fetch('title'); ?> </title>
+    <meta name="description" content="倚天剑shadow，提供shadowsocks科学上（翻）网（墙）账号，免费shadowsocks账号，试用shadowsocks账号，让您畅游网络世界。无障碍使用google搜索，登录facebook、twitter，登录gmail收发邮件！">
+    <meta name="keywords" content="倚天剑shadow，免费shadowsocks账号，科学上（翻）网（墙），shadowsocks试用账号，goagent，shadowsocks教程">
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+
     <!-- Bootstrap 3.3.2 -->
     <?php
         echo $this->Html->meta('icon');

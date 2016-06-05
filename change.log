@@ -64,10 +64,18 @@ Revision xx, ==> fix cake_users uid to id
 1. shangjia ask for telephone/email
 2. users find back password
 
-#TODO -> 2016.2.25
+#TODO -> 2016.2.25 -> done
 1. fix alipay attack creating orders without offical 
     domain but an ip -> done
 
 #TODO 2016.5.29
-1. add trial port
+done -> 1. add trial port 
 2. script add auto delete/add trail port function
+3. user pays an unfinished order while he has already had a using port.
+    update alipay return logic block code
+done -> 4. iptables upgrade to timely delete blocked ips
+done -> 5. auto reset expired port 
+    a. first remove port, make the port invalid
+    b. after k days, update the invalid port to available
+# 2016.6.5
+finish page seo 

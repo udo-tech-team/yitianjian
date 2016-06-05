@@ -94,7 +94,7 @@ class PagesController extends AppController {
     public function display() {
         $this->view = 'empty';
         $this->layout = 'home';
-        $this->set('title_for_layout', 'titlexxxxx');
+        $this->set('title', '倚天剑shadow|shadowsocks账号|免费shadowsocks账号');
         $this->set("show_goods_list", $this->show_goods_list);
         $log_str = sprintf('[%s/%s:%s]in homepage, client ip:%s', 
                 __CLASS__, __FUNCTION__, __LINE__,

@@ -5,13 +5,12 @@
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="倚天剑shadow，提供shadowsocks科学上（翻）网（墙）账号，免费shadowsocks账号，试用shadowsocks账号，让您畅游网络世界。无障碍使用google搜索，登录facebook、twitter，登录gmail收发邮件！">
+    <meta name="keywords" content="倚天剑shadow，免费shadowsocks账号，科学上（翻）网（墙），shadowsocks试用账号，goagent，shadowsocks教程">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="">
+    <meta name="author" content="倚天剑shadow">
 
     <title>Shadowsocks - 免费shadowsocks帐号和使用教程</title>
-    <meta name="description" content="shadowsocks为大家长期更新免费倚天剑账号,提供最详细的倚天剑在windows/Mac/Android上的使用教程和倚天剑各种平台的软件下载,带各位小伙伴零基础轻松学会和玩转倚天剑" />
-    <meta name="keywords" content="shadowsocks,免费倚天剑,倚天剑账号,倚天剑怎么用,倚天剑教程" />
 
 
     <!-- Bootstrap Core CSS - Uses Bootswatch Flatly Theme: http://bootswatch.com/flatly/ -->
@@ -112,6 +111,16 @@
 
 <?php endif; ?>
                     </h4>
+</br>
+                    <h4><font color="red">注意：不定期更新密码，多人同时试用时将掉线</font></h4>
+                    <h4><font color="red"><a href="<?php 
+
+echo $this->Html->url(
+    array('controller' => 'users',
+        'action' => 'ucenter'
+        )
+    );
+                        ?>">购买专用账号=>go</a></font></h4>
 <?php
         }
 ?>
@@ -135,7 +144,8 @@
 
 <?php endif; ?>
                     </h4>
-                    <h4><font color="red">注意：不定期更新密码，请收藏网址以便随时查看</font></h4>
+</br>
+                    <h4><font color="red">注意：不定期更新密码，多人同时试用时将掉线</font></h4>
 <?php 
         }
         else {

@@ -59,7 +59,7 @@ class UsersController extends AppController
         if ($money) {
             $this->set('remindInfo','注册成功后￥' . $money . '将存入您的账户');
         }
-        $this->set('title_for_layout', "User::register");
+        $this->set('title_for_layout', "User::register|倚天剑shadow - 提供shadowsocks科学上（翻）网（墙）账号！倚天剑shadow|shadowsocks账号|免费shadowsocks账号");
         //var_dump($this->request->data);
         $err = 0; // no error 
         $msg = "";
@@ -681,7 +681,7 @@ class UsersController extends AppController
 
     function login() {
         CakeLog::write('info', 'in user login, client ip:' . $this->request->clientIp());
-        $this->set('title_for_layout', "User::login");
+        $this->set('title_for_layout', "User::login|倚天剑shadow - 提供shadowsocks科学上（翻）网（墙）账号！倚天剑shadow|shadowsocks账号|免费shadowsocks账号");
         $err = 0;
         $msg = "";
         $uid = CakeSession::read('uid');

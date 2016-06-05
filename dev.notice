@@ -32,5 +32,7 @@ mysql> select date_add(now(), interval '1,2' YEAR_MONTH);
 
 [define]
 1. cake_ports
-    status 0=>idle, 1=>user, 2=>deleted, 3=>trial_port, 4=>merchant
+    status 0=>idle, 1=>user, 2=>deleted, from trial status to deleted status
+                3=>trial_port, 4=>merchant, 
+                8=>invalid, deleted. from in use status to deleted status
 

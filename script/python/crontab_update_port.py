@@ -3,7 +3,7 @@
 
 ######################################
 #
-# @param:  trial_port_crontab | expired_crontab | merchant_crontab
+# @param:  trial_port_crontab | expired_crontab | merchant_crontab | accident_recover
 #    crontab to update port status
 #
 ######################################
@@ -41,6 +41,14 @@ class UpdatePort:
     trial_status = 3
     # merchant_port status
     merchant_status = 4
+    # in use status
+    port_in_use_status = 1
+    # invalid status
+    port_invalid_status = 8
+    # available status
+    port_available_status = 0
+    # add the port after expired for k days
+    k_days_ago = 30
 
     def __init__(self):
       logging.basicConfig(level=logging.DEBUG,
@@ -62,6 +70,7 @@ class UpdatePort:
         self.conf['remote_ip'] = cf.get(clt_sec, 'remote_ip')
         self.conf['pass_cmd_seperator'] = cf.get(clt_sec, 'pass_cmd_seperator')
         self.conf['password'] = cf.get(clt_sec, 'password')
+        self.conf['debug_mode'] = cf.get(clt_sec, 'debug_mode')
         #self.conf[''] = cf.get(clt_sec, '')
         log_str = 'load_conf succ, %s' % (self.conf)
         logging.debug(log_str)
@@ -117,8 +126,33 @@ class UpdatePort:
 
         return True
 
+    def remove_port(self, port):
+        """ single function to remove port on ssserver without other operations"""
+        if not port or not self.GOON:
+            log_str = 'GOON is false or port[%s], stop.' % (port)
+            logging.warning(log_str)
+            return False
+
+        # remove port
+        cmd = 'remove:{"server_port":' + str(port) + '}'
+        net_str = self.conf['password'] + self.conf['pass_cmd_seperator'] + cmd
+        self.sock.sendall(net_str)
+        exec_res = self.sock.recv(1024)
+
+        log_str = '[%s] exec res[%s]' % (net_str, exec_res)
+        if exec_res != 'ok':
+            logging.critical(log_str)
+            return False
+        else:
+            logging.info(log_str)
+
+        return True
+
 
     def update_port(self, rec):
+        """ this function is decreapted as the opeartion of changing a port password
+            all at a sudden may cause the user's ip in iptables drop list
+        """
         if not self.GOON:
             logging.warning('GOON is false, stop.')
             return False
@@ -137,6 +171,7 @@ class UpdatePort:
         else:
             logging.info(log_str)
 
+        # add the removed port with another pass
         old_pass = rec[4]
         new_pass = self.get_next_sspass(old_pass)
         cmd = 'add:{"server_port":' + str(rec[1]) + ',"password":"' + new_pass + '"}'
@@ -166,18 +201,27 @@ class UpdatePort:
 
     def reset_expired_port(self):
       """reset expired port[update status/uid/expire/sspass fields]"""
-      # first update status/uid, so record will not show in ucenter
+      # first update status/uid, so record will not show in ucenter.
+      #     mark status as invalid, remove the port from ssserver, 
+      #     so if the user still use the port, user's ip will not in iptables drop list
       # second change sspass, so the account is invalid for formmer user
       if not self.GOON:
           logging.warning('GOON is false, stop.')
           return
       try:
+
+        # first step, set expired ports invalid and delete on ssserver
         self.dbObj = Database.MysqlObj()
+        # select records and log
         time_now = time.strftime(self.time_format, time.localtime(time.time()))
-        sql_query = 'select * from cake_ports where expire <= "' + time_now + '"'
+        sql_query = 'select * from cake_ports where expire <= "' + time_now  \
+                + '" and status = ' + str(self.port_in_use_status)
+        if self.conf['debug_mode'] != '0':
+            sql_query = sql_query  + ' limit 1 '
         count, all_res = self.dbObj.find_all(sql_query)
         log_str = 'query[%s] record count[%s]' % (sql_query, count)
         logging.info(log_str)
+
         for rec in all_res:
             #rec(is, ssport,sshost,ssencrypt,sspass,status,created,modified,uid,sip,expire)
             #print rec[0], rec[4]
@@ -185,8 +229,8 @@ class UpdatePort:
             logging.info(log_str)
 
             # update cake_ports
-            update_query = 'update cake_ports set status = 0, uid = 0, mtid=0, modified=now() where id = %d' \
-                    % (rec[0])
+            update_query = 'update cake_ports set status = %d, uid = 0, mtid=0, modified=now() where id = %d' \
+                    % (self.port_invalid_status, rec[0])
             #exec_res = 1
             exec_res = self.dbObj.exec_query(update_query)
             log_str = '[%s] exec res[%s]' % (update_query, exec_res)
@@ -195,11 +239,33 @@ class UpdatePort:
                 continue
             else:
                 logging.info(log_str)
+                # remove the expired port on ssserver
+                remove_res = self.remove_port(rec[1])
+                log_str = 'remove port[%d] res[%s]' % (rec[1], remove_res)
+                logging.warning(log_str)
+
+        # second step, add long time(k days ago) invalid ports
+        last_k_days_to_seconds = self.k_days_ago * 60 * 60 * 24 
+        time_ago = time.strftime(self.time_format, time.localtime(time.time() - last_k_days_to_seconds))
+        sql_query = 'select * from cake_ports where expire <= "' + time_ago \
+                + '" and status = ' + str(self.port_invalid_status)
+        if self.conf['debug_mode'] != '0':
+            sql_query = sql_query  + ' limit 1 '
+        count, all_res = self.dbObj.find_all(sql_query)
+        log_str = 'query[%s] record count[%s]' % (sql_query, count)
+        logging.info(log_str)
+        for rec in all_res:
             if not self.update_port(rec):
                 log_str = 'port_id[%d] update failed.' % (rec[0])
                 logging.critical(log_str)
             else:
-                log_str = 'port_id[%d] update succ' % (rec[0])
+                # update cake_ports set to available
+                update_query = 'update cake_ports set status = %d, modified=now() where id = %d' \
+                        % (self.port_available_status, rec[0])
+                #exec_res = 1
+                exec_res = self.dbObj.exec_query(update_query)
+                log_str = 'cmd[%s] port_id[%d] update is_succ[%d]' % (update_query, rec[0], exec_res)
+                logging.info(log_str)
 
 
       except Exception as e:
@@ -374,19 +440,20 @@ class UpdatePort:
         if not self.GOON:
             logging.warning('GOON is false, stop.')
             return
+        exec_succ = False
         try:
             self.dbObj = Database.MysqlObj()
             sql_query = 'select ssport, sspass from cake_ports'
             count, all_res = self.dbObj.find_all(sql_query)
             log_str = 'query[%s] record count[%d]' % (sql_query, count)
             if count >= 1:
-                # merchant exists
+                # ports exists
                 logging.info(log_str)
 
                 total_count = 0
                 succ_count = 0
                 for rec in all_res:
-                    # get merchant port record
+                    # insert a rec
                     insert_res = self.insert_port(rec[0], rec[1])
                     if not insert_res:
                         logging.critical("insert port failed. port[%s] pass[%s]" \
@@ -402,12 +469,15 @@ class UpdatePort:
                         % (total_count, succ_count))
 
             else:
-                #no merchants
+                #no ports
                 logging.warning(log_str)
+            # arrive here means all executed, marked as succ
+            exec_succ = True
         except Exception as e:
             log_str = 'exception occurs, [%s] sys[%s] traceback[%s]' \
                     % (e, sys.exc_info(), traceback.print_exc())
             logging.warning(log_str)
+        return exec_succ
 
     def client_start(self):
         self.load_conf()

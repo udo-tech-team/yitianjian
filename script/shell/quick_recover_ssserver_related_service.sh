@@ -9,15 +9,17 @@
 #
 #########################################
 
+#  script/shell
 cur_dir=$(pwd)
-logpath=${cur_dir}'/log'
+logpath=${cur_dir}'/log/'
 filename='quick_recover.log'
 
 mkdir -p $logpath
 logfile=$logpath/$filename
 
 process_name='ssserver'
-recover_working_dir='/home/alice/script'
+# script/python
+recover_working_dir=${cur_dir}'/../python'
 
 # see if process exists
 ps -ef | grep "$process_name" | grep manager | grep -v grep > /dev/null
@@ -36,10 +38,9 @@ fi
 # process not exists
 # exit when any cmd exec fail
 set -e
-cd $recover_working_dir 
 
-info_log='ss_server_start.log'
-err_log='ss_server_start.log.err'
+info_log=${logpath}'ss_server_start.log'
+err_log=${logpath}'ss_server_start.log.err'
 port_manager_py='port_manager_server.v3.py'
 recover_message_sender='ss_message_sender.py'
 
@@ -47,6 +48,8 @@ recover_message_sender='ss_message_sender.py'
 date '+%Y-%m-%d %H:%M:%S' >> $info_log 
 date '+%Y-%m-%d %H:%M:%S' >> $err_log
 sh start_v2.cmd 1 >> $info_log 2 >> $err_log
+
+cd $recover_working_dir 
 
 # kill daemon port_manager process, ignore failure
 set +e

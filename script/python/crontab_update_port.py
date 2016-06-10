@@ -79,13 +79,13 @@ class UpdatePort:
         log_str = 'exception occurs[%s]' % (e)
         logging.warning(log_str)
 
-    def init_sock(self):
+    def init_sock(self, remote_ip):
       if not self.GOON:
           logging.warning('GOON is false, stop.')
           return
       try:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((self.conf['remote_ip'], (int)(self.conf['remote_port'])))
+        self.sock.connect((remote_ip, (int)(self.conf['remote_port'])))
         log_str = 'init_sock succ, %s' % (self.sock)
         logging.debug(log_str)
       except Exception as e:
@@ -479,9 +479,9 @@ class UpdatePort:
             logging.warning(log_str)
         return exec_succ
 
-    def client_start(self):
+    def client_start(self, remote_ip = self.conf['remote_ip']):
         self.load_conf()
-        self.init_sock()
+        self.init_sock(remote_ip)
         if len(sys.argv) <= 1 or sys.argv[1] == self.EXPIRED_CRONTAB:
             self.reset_expired_port()
         elif sys.argv[1] == self.TRIAL_PORT_CRONTAB:

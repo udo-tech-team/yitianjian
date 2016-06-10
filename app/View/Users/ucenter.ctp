@@ -205,7 +205,7 @@
                     class="btn btn-warning">
                              下载
                 </a>
-                    ，<font color=red>需要在浏览器中打开</font></span><br/>
+                    ，<font color=red>需要在浏览器中打开链接下载</font></span><br/>
             <?php else: ?>
             <span>暂时未获取到您的账号信息，您可以:</span><br/> <br/>
             <a href="<?php 

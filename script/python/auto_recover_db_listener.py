@@ -97,14 +97,18 @@ class RecoverListener:
         log_str = 'updatePort class instance[%s]' % (self.uptp)
         logging.debug(log_str)
 
-    def exec_remote_cmd(self, cmd_str):
+    def exec_remote_cmd(self, cmd_str, remote_ip):
         """act according to cmd_str"""
         if not self.GOON:
             logging.warning('GOON is false, stop.')
             return
 
+        if remote_ip is None:
+            logging.warning('remote ip none, stop.')
+            return
+
         # set succ default to false
-        succ = False 
+        is_succ = False 
         try:
             # quick_recover
             if cmd_str == self.QUICK_RECOVER:
@@ -115,7 +119,7 @@ class RecoverListener:
                     ori_second_param = sys.argv[1]
                     sys.argv[1] = self.ACCIDENT_RECOVER
                 log_str = 'sys.argv[%s] cmd_str[%s]' % (sys.argv, cmd_str)
-                self.uptp.client_start()
+                self.uptp.client_start(remote_ip)
     
                 # recover sys param
                 if ori_second_param == '':
@@ -123,12 +127,12 @@ class RecoverListener:
                 else:
                     sys.arg[1] = ori_second_param
 
-                succ = True
+                is_succ = True
         except Exception as e:
             #print e, ", close conn"
             logging.warning(e)
 
-        return succ
+        return is_succ
 
     def serve_forever(self):
         if not self.GOON:
@@ -157,7 +161,7 @@ class RecoverListener:
                         cmd = split_arr[1]
                         res = 'error'
                         # call accident recover
-                        if self.exec_remote_cmd(cmd):
+                        if self.exec_remote_cmd(cmd, addr[0]):
                             res = 'ok'
                         conn.sendall(res)
                     else:

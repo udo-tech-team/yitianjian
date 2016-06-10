@@ -20,6 +20,8 @@ class UsersController extends AppController
     private $USER_BUY_NEW = 'user_buy_new';
     private $OLD_CONTINUE = 'old_continue';
 
+    private $CONTACT_QQ_NUM = '3382558130';
+
     //add security xx=>false to allow cross controller session
     //add beforeFilter to allow post register data
     public function beforeFilter() {
@@ -662,7 +664,9 @@ class UsersController extends AppController
             }
             $this->Session->write('vcode', '');
             $this->set("htext", "成功！");
-            $this->set("detail_info","恭喜您提交建议成功！");
+            $success_detail_info = "恭喜您提交建议成功！";
+            $success_detail_info .= "需要更快回复请加QQ " . $this->CONTACT_QQ_NUM;
+            $this->set("detail_info", $success_detail_info);
             return;
 
             //var_dump($rdata);

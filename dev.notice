@@ -29,6 +29,7 @@ mysql> select date_add(now(), interval '1,2' YEAR_MONTH);
 2. if new file is added, 'git commit -m "message" ' to commit to local,
     else if old file is changed, 'git commit -a' to commit changes to local
 3. 'git push -u origin master' to commit to master
+4. 'git pull' to update, checkout remote updated master file to local
 
 [define]
 1. cake_ports

@@ -41,7 +41,7 @@ set -e
 
 info_log=${logpath}'ss_server_start.log'
 err_log=${logpath}'ss_server_start.log.err'
-port_manager_py='port_manager_server.v3.py'
+port_manager_py='port_manager_server.py'
 recover_message_sender='ss_message_sender.py'
 
 # start ssserver

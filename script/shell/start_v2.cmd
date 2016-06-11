@@ -2,7 +2,7 @@
 #rm old socket manager
 
 # ss working directory
-working_dir=$(pwd)
+working_dir=$(pwd)'/'
 
 mkdir -p $working_dir
 

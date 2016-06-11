@@ -28,9 +28,11 @@ method='post'
             <option value="1">1 个月</option>
             <option value="2">2 个月</option>
             <option value="3">3 个月</option>
+<!-- currently disable
             <option value="6">6 个月</option>
             <option value="9">9 个月</option>
             <option value="12">12 个月</option>
+-->
           </select>
         </div>
         <div class="field">

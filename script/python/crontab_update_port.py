@@ -479,9 +479,10 @@ class UpdatePort:
             logging.warning(log_str)
         return exec_succ
 
-    def client_start(self, remote_ip = self.conf['remote_ip']):
+    def client_start(self, remote_ip = None):
         self.load_conf()
-        self.init_sock(remote_ip)
+        # if param remote_ip None, use conf value
+        self.init_sock(remote_ip or self.conf['remote_ip'])
         if len(sys.argv) <= 1 or sys.argv[1] == self.EXPIRED_CRONTAB:
             self.reset_expired_port()
         elif sys.argv[1] == self.TRIAL_PORT_CRONTAB:

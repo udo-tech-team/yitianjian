@@ -46,7 +46,9 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="#page-top">shadowsocks</a>
+                <a class="navbar-brand" href="<?php 
+                    echo $this->Html->url('/');
+                    ?>">shadowsocks</a>
             </div>
 
             <!-- Collect the nav links, forms, and other content for toggling -->
@@ -84,7 +86,7 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-lg-4 text-left">
+                <div class="col-lg-3 text-left">
 
 <?php 
         $all_trial_ports = $this->get('all_trial_ports');
@@ -126,7 +128,7 @@ echo $this->Html->url(
 ?>
 
                 </div>
-		<div class="col-lg-4 text-left">
+		<div class="col-lg-3 text-left">
 <?php
         // if exists first port
         if ($ports_count > 0) {
@@ -164,15 +166,76 @@ echo $this->Html->url(
                         ?>">购买专用账号=>go</a></font></h4>
                 </div>
 
-                <div class="col-lg-4 text-center">
-                    <!--
-                    <h4>C服务器地址:hk3.iss.tf</h4>
-                    <h4>端口:8989</h4>
-<h4>C密码:10027000</h4>
-                    <h4>加密方式:aes-256-cfb</h4>
-                    <h4>状态:<font color="green">正常</font></h4>
-                    <h4><font color="red">注意：每6小时更换一次密码</font></h4>
-                    -->
+                <div class="col-lg-3 text-left">
+
+
+<?php
+        // if exists first port
+        if ($ports_count > 2) {
+            // here first port actually is third port
+            $first_port = $all_trial_ports[2]['Port'];
+?>
+        <h4><p class="text-lowercase">服务器地址: <?php echo $first_port['sshost']; ?></p></h4>
+        <h4>端口: <?php echo $first_port['ssport']; ?></h4>
+                    <div id="vip"></div>
+                    <h4><p class="text-lowercase">密码: <?php echo $first_port['sspass']; ?></p></h4>
+                    <h4><p class="text-lowercase">加密方式: <?php echo $first_port['ssencrypt']; ?></p></h4>
+                    <h4>状态: <?php if ($first_port['status'] != $PORT_INVALID): ?>
+                                <font color="green">正常 </font>
+<?php else:?>  
+                                <font color="red">正被占用中</font>
+
+<?php endif; ?>
+                    </h4>
+</br>
+                    <h4><font color="red">注意：不定期更新密码，多人同时试用时将掉线</font></h4>
+                    <h4><font color="red"><a href="<?php 
+
+echo $this->Html->url(
+    array('controller' => 'users',
+        'action' => 'ucenter'
+        )
+    );
+                        ?>">购买专用账号=>go</a></font></h4>
+
+<?php 
+        }
+?>
+                </div>
+
+                <div class="col-lg-3 text-left">
+
+<?php
+        if ($ports_count > 3) {
+            // here first port actually is forth port
+            $first_port = $all_trial_ports[3]['Port'];
+?>
+        <h4><p class="text-lowercase">服务器地址: <?php echo $first_port['sshost']; ?></p></h4>
+        <h4>端口: <?php echo $first_port['ssport']; ?></h4>
+                    <div id="vip"></div>
+                    <h4><p class="text-lowercase">密码: <?php echo $first_port['sspass']; ?></p></h4>
+                    <h4><p class="text-lowercase">加密方式: <?php echo $first_port['ssencrypt']; ?></p></h4>
+                    <h4>状态: <?php if ($first_port['status'] != $PORT_INVALID): ?>
+                                <font color="green">正常 </font>
+<?php else:?>  
+                                <font color="red">正被占用中</font>
+
+<?php endif; ?>
+                    </h4>
+</br>
+                    <h4><font color="red">注意：不定期更新密码，多人同时试用时将掉线</font></h4>
+                    <h4><font color="red"><a href="<?php 
+
+echo $this->Html->url(
+    array('controller' => 'users',
+        'action' => 'ucenter'
+        )
+    );
+                        ?>">购买专用账号=>go</a></font></h4>
+
+<?php 
+        }
+?>
                 </div>
             </div>
             <div class="row" >
@@ -189,6 +252,25 @@ echo $this->Html->url(
                     ?>">购买专用账号=>go</a></font></h4>
                 </div>
             </div>
+
+            <div class="row">
+                <div class="col-lg-4 text-left">
+                  <h3>尊享体验</h3>
+                  <p>不限流量，不限终端，个人专用，多终端设备不掉线</p>
+                </div>
+
+                <div class="col-lg-4 text-left">
+                  <h3>实惠方便</h3>
+                  <p>低至2元/月，平均0.07元/天，支付宝7*24小时随时下单购买</p>
+                </div>
+
+                <div class="col-lg-4 text-left">
+                  <h3>使用无忧</h3>
+                  <p>客服qq<a target="_blank" href="http://wpa.qq.com/msgrd?v=3&uin=3382558130&site=qq&menu=yes"><img border="0" src="http://wpa.qq.com/pa?p=2:3382558130:52" alt="咨询客服" title="咨询客服"/></a>在线，随时解决使用过程中碰到的问题</p>
+                </div>
+
+            </div>
+
         </div>
     </section>
 
@@ -392,6 +474,8 @@ echo $this->Html->url(
                     <div class="footer-col col-md-6">
                         <h3>联系我们</h3>
                         <p>如有任何问题，请联系ye515430@163.com</p>
+                        <p>客服QQ 3382558130 
+<a target="_blank" href="http://wpa.qq.com/msgrd?v=3&uin=3382558130&site=qq&menu=yes"><img border="0" src="http://wpa.qq.com/pa?p=2:3382558130:52" alt="咨询客服" title="咨询客服"/></a></p>
                     </div>
                 </div>
             </div>

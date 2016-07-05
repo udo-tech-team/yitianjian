@@ -287,8 +287,8 @@ class YitianjianPortManager:
         try:
             succ_count = 0
             if self.conf['every_port_insert2multi_ssserver'] == '0':
-                for rec in all_res:
                 # every port insert into single domain
+                for rec in all_res:
                     #  param: port, domain, pass
                     insert_res = self.insert_port(rec[1], rec[2], rec[4]) 
                     log_str = 'id[%d] port[%d] is_succ[%s]' % \
@@ -296,8 +296,8 @@ class YitianjianPortManager:
                     logging.warning(log_str)
                     if insert_res:
                         succ_count += 1
-                # every port insert into multi domain
             else:
+                # every port insert into multi domain
                 for domain in self.multi_domain_arr:
                     for rec in all_res:
                         insert_res = self.insert_port(rec[1], domain, rec[4]) 

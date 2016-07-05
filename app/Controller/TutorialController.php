@@ -5,7 +5,7 @@ class TutorialController extends AppController {
     var $name = 'Tutorial';
     var $TRIAL_PORT_STATUS = 3;
     var $INVALID_PORT_STATUS = 2;
-    var $MAX_TRIAL_PORTS_SELECT_NUM = 3;
+    var $MAX_TRIAL_PORTS_SELECT_NUM = 4;
 
     function index() {
         $this->view = 'intro';

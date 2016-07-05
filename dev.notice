@@ -20,9 +20,14 @@ mysql> select date_add(now(), interval '1,2' YEAR_MONTH);
 
 [put online]
 1. make sure all the tables are ready(import new *.sql)
-2. remove tmp/cache/...._list
+2. remove tmp/cache/...._list  
 3. remove tmp/cache/persistent/myapp_cake_core_method_cache
 4. change price conf
+NOTICE:  2. & 3. should do at the same time when add a new coloum to a table
+            when add a new table, 2. will be enough
+5. if 2. && 3. not resolved the problem, then do:
+    rm tmp/cache/models/*
+    rm tmp/cache/persistent/myapp_cake_core_method_cache
 
 [git help]
 1. 'git add new_file_name' to add new file
@@ -30,6 +35,7 @@ mysql> select date_add(now(), interval '1,2' YEAR_MONTH);
     else if old file is changed, 'git commit -a' to commit changes to local
 3. 'git push -u origin master' to commit to master
 4. 'git pull' to update, checkout remote updated master file to local
+5. 'git reset path/to/file' to redo from an 'git add' action with file changes still kept
 
 [define]
 1. cake_ports

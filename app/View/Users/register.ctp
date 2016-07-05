@@ -15,6 +15,13 @@
             ?>" 
 			method="post" onsubmit="return check_pass();" >
 
+            <?php if (Configure::read('open_invite') > 0 
+                 && !empty($this->get('invite_info'))): ?>
+          <div class="alert alert-success form-group">
+            <?php echo $this->get('invite_info'); ?>
+          </div>
+            <?php  endif; ?>
+
             <?php if (!empty($this->Session->read('money'))): ?>
           <div class="alert alert-success form-group">
             <!--input type="text" name="username" value="" class="form-control" placeholder="用户名"/--->
@@ -33,7 +40,7 @@
 
           <div class="form-group has-feedback">
               <input type="text" name="email" id="email" value="<?php if ($this->request->is('post')) { echo $this->request->data['email']; } ?>"
-                     class="form-control" placeholder="Email / Telephone"/>
+                     class="form-control" placeholder="Email"/>
             <!--span class="glyphicon glyphicon-envelope form-control-feedback"></span-->
             <span class="glyphicon-envelope form-control-feedback"></span>
           </div>

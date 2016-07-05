@@ -12,6 +12,7 @@ class UsersController extends AppController
     private $PORT_IN_USE = 1;
     private $PORT_AVAILABLE = 0;
     private $PORT_ERROR = 2;
+    private $PORT_MAX_COUNT_PER_USER = 10;
 
     private $NOT_PAID = 0;  // alipay didn't return succ
     private $ALREADY_PAID = 1; // user paid but port not updated
@@ -20,12 +21,25 @@ class UsersController extends AppController
     private $USER_BUY_NEW = 'user_buy_new';
     private $OLD_CONTINUE = 'old_continue';
 
-    private $CONTACT_QQ_NUM = '3382558130';
+    private $CONTACT_QQ_NUM = '';
+
+    private $NORMAL_INFO_TYPE = 1;
+    private $LINE_AVAILABLE_STATUS = 0;
+    private $USER_VOUCHER_SELECT_LIMIT = 30;
+    private $VOUCHER_VIA_REGISTER = 2;
+    private $VOUCHER_VIA_INVITING = 2;
+    private $VOUCHER_VALID = 1;
+
+    // to avoid attach
+    //      on average, every ip is allowed to visit n times 
+    //      within a day via inviting page, see detail code
+    private $VISIT_RATIO_THRESHOLD = 5;
 
     //add security xx=>false to allow cross controller session
     //add beforeFilter to allow post register data
     public function beforeFilter() {
         parent::beforeFilter();
+        $this->CONTACT_QQ_NUM = Configure::read('kefu_qq');
         if (isset($this->Security)) { //&& isset($this->Auth)) {
             //$this->Auth->allow('index', 'register');
             //$this->Security->config('unlockedActions', 'register');
@@ -34,6 +48,8 @@ class UsersController extends AppController
             $this->Security->csrfCheck = false;
         }
     }
+
+        // parent::__construct();
 
     function index() {
         $this->set('title_for_layout', "User::mypage");
@@ -44,7 +60,7 @@ class UsersController extends AppController
         );
     }
 
-    function register() {
+    function register($invite_md5='') {
         //check if user logged in
         //session_start();  // this can't do, or the original session will b lost
         $log_info = 'in register, ip:' . $this->request->clientIp();
@@ -57,9 +73,94 @@ class UsersController extends AppController
                 array("controller" => "users", "action" => "ucenter")
             );
         }
+
         $money = $this->Session->read('money');
         if ($money) {
             $this->set('remindInfo','注册成功后￥' . $money . '将存入您的账户');
+        }
+
+        $inviting_user = array();
+        if ($invite_md5 != '') {
+            // user visit from shared inviting page
+            // this code block writes log and insert db record,
+            //      avoid attack !!!
+          do {
+            // check if invite_md5 correct
+            $conditions = array(
+                'uniq_md5' => $invite_md5,
+            );
+            $inviting_user = $this->User->find('first', 
+                array(
+                    'conditions' => $conditions,
+                )
+            );
+
+            // not exists
+            if (empty($inviting_user)) {
+                $log_str = sprintf('ip[%s] invite_md5[%s] find '.
+                    'no inviting user', 
+                    $this->request->clientIp(), $invite_md5);
+                Cakelog::write('warning', $log_str);
+
+                // reset invite_md5 to avoid following process
+                $invite_md5 = '';
+                break;
+            } 
+
+            // if the distinct ip much more less than visit count, 
+            //  we regard it as an attack.
+            //    i.e. visit_count / ip_count > threshold in a day,
+            //          disable insert
+            $time_start = date('Y-m-d 00:00:00', time());
+            $select_cond = array(
+                'invite_md5' => $invite_md5,
+                'created >=' => $time_start,
+            );
+            $this->loadModel('Ivisit');
+            $visited_total = $this->Ivisit->find('count', 
+                array(
+                    'conditions' => $select_cond,
+                )
+            );
+            $distinct_ip_total = $this->Ivisit->find('count', 
+                array(
+                    'fields' => 'distinct req_ip',
+                    'conditions' => $select_cond,
+                )
+            );
+
+            if ($distinct_ip_total > 0) {
+                $ratio = $visited_total / $distinct_ip_total;
+                $log_str = sprintf('daily visited/disctinct [%s], threshold[%s]', 
+                        $ratio, $this->VISIT_RATIO_THRESHOLD);
+                CakeLog::write('debug', $log_str);
+
+                if ($ratio >= $this->VISIT_RATIO_THRESHOLD) {
+                    break;
+                }
+            }
+
+            // record this visit
+
+            $data_row = array(
+                'req_ip' => $this->request->clientIp(),
+                'invite_md5' => $invite_md5,
+            );
+            $save_res = $this->Ivisit->save($data_row);
+
+            $money = Configure::read('register_user_money') / 100;
+
+            $this->Session->write('invite_md5', $invite_md5);
+            $this->set('invite_info',
+                '注册成功后￥' . $money . '将存入您的账户');
+
+            $log_str = sprintf('ip[%s] invite_md5[%s] save to ivisit res[%s].', 
+                $this->request->clientIp(), 
+                $data_row['invite_md5'], 
+                $save_res['Ivisit']['id']);
+            CakeLog::write('debug', $log_str);
+          } while (0);
+
         }
         $this->set('title_for_layout', "User::register|倚天剑shadow - 提供shadowsocks科学上（翻）网（墙）账号！倚天剑shadow|shadowsocks账号|免费shadowsocks账号");
         //var_dump($this->request->data);
@@ -104,6 +205,7 @@ class UsersController extends AppController
               }
           }
         }
+
         if ($isPost && $err == 0) {
             //data validated ok
             //insert into db, get user loged in
@@ -112,6 +214,14 @@ class UsersController extends AppController
                 'email' => $rdata['email'],
                 'password' => md5($rdata['password']),
             );
+
+            if (Configure::read('open_invite') > 0) {
+                $md5_field = sprintf('%d,%s,%s',
+                    rand(1000, 9999), $this->request->clientIp(), $rdata['email']);
+
+                $data_row['uniq_md5'] = md5($md5_field);
+                $data_row['reg_ip'] = $this->request->clientIp();
+            }
             //save_res is the whole data_row
             $save_res = $this->User->save($data_row); 
             //var_dump($save_res);
@@ -135,6 +245,63 @@ class UsersController extends AppController
                //var_dump($this->Session->read('uid'));
                //var_dump($save_res);
                 $this->log('register success,email=' . $rdata['email'], 'info');       
+
+                // register ok. process inviting related logic
+                //      1. add a voucher to registered user
+                //      2. add invite_num to inviting user in cake_users
+                $invite_md5 = $this->Session->read('invite_md5');
+                if (Configure::read('open_invite') > 0 && $invite_md5 != '') {
+                    $this->loadModel('Voucher');
+
+                    $conditions = array(
+                        'uniq_md5' => $invite_md5,
+                    );
+                    $inviting_user = $this->User->find('first', 
+                        array(
+                            'conditions' => $conditions,
+                        )
+                    );
+
+                    $inviting_uid = $inviting_user['User']['uid'];
+
+                    $date_time_now = date('Y-m-d H:i:s', time());
+                    $md5_source = sprintf('%d-%s-%s-%s', 
+                        $uid, $rdata['email'], 
+                        $date_time_now, $this->request->clientIp());
+
+                    // for registering user
+                    $expire_after_k_months = 3;
+                    $expire_datetime = date('Y-m-d H:i:s', 
+                        strtotime("+$expire_after_k_months month"));
+                    $data_row = array(
+                        'md5str' => md5($md5_source),
+                        'uid' => $uid,
+                        'from_uid' => $inviting_uid,
+                        'get_from' => $this->VOUCHER_VIA_REGISTER,
+                        'expire' => $expire_datetime,
+                        'amount' => Configure::read('register_user_money'),
+                        'is_valid' => $this->VOUCHER_VALID,
+                    );
+
+                    $save_res = $this->Voucher->save($data_row);
+                    if (empty($save_res)) {
+                        $log_str = sprintf('save voucher failed, user[%d]',
+                            $uid);
+                        CakeLog::write('warning', $log_str);
+                    }
+
+                    // increase invite_num field.
+                    $this->User->id = $inviting_user['User']['uid'];
+                    $invite_num = $inviting_user['User']['invite_num'] + 1;
+                    $this->User->saveField('invite_num', $invite_num);
+
+                    $log_str = sprintf('invite success, new user[%d]',
+                        $uid);
+                    CakeLog::write('debug', $log_str);
+
+                }
+
+
                 $this->assign_money2user();
                 return $this->redirect(
                  array("controller" => "users", "action" => "ucenter")
@@ -318,6 +485,7 @@ class UsersController extends AppController
         // user already logged in
         $uid = CakeSession::read('uid');
 
+        if (Configure::read('new_user_center') == 0) {
         // user buys an account or renews an account
         // update port info
         $this->loadModel('Order');
@@ -406,6 +574,409 @@ class UsersController extends AppController
         $log_str = sprintf('uid[%s] ip[%s] in ucenter page', 
                 $uid, $this->request->clientIp());
         CakeLog::write('info', $log_str);
+
+        } else 
+
+
+/********************************************************************/
+        /*****
+         * the entry to new style usercenter
+         * depending on the conf switch
+         *******/
+        if (Configure::read('new_user_center')) {
+            // get total user ss count
+            $this->loadModel('Port');
+            $port_conditions = array(
+                'uid' => $uid,
+                'status' => $this->PORT_IN_USE,
+            );
+
+            $user_ports = $this->Port->find('all',
+                array(
+                    'conditions' => $port_conditions,
+                    'limit' => $this->PORT_MAX_COUNT_PER_USER,
+                )
+            );
+            $total_ports_num = count($user_ports);
+
+            // calculate each port remaining days
+            $seconds_per_day = 60 * 60 * 24;
+            $expire_in_one_month = 0;
+            $expire_in_one_week = 0;
+            for ($idx = 0; $idx < $total_ports_num; $idx++) {
+                $expire_second = strtotime($user_ports[$idx]['Port']['expire']);
+                $now_second = time();
+                $remain_second = $expire_second - $now_second;
+                $remain_days = (int)($remain_second / $seconds_per_day);
+                $user_ports[$idx]['Port']['remain_days'] = $remain_days;
+
+                $one_week_later_second = strtotime('+1 week');
+                $one_month_later_second = strtotime('+1 month');
+                if ($one_week_later_second > $expire_second) {
+                    $expire_in_one_week += 1;
+                }
+                if ($one_month_later_second > $expire_second) {
+                    $expire_in_one_month += 1;
+                }
+            }
+
+            $this->set('user_ports', $user_ports);
+            $this->set('total_ports_num', $total_ports_num);
+            $this->set('expire_in_one_week', $expire_in_one_week);
+            $this->set('expire_in_one_month', $expire_in_one_month);
+
+            $this->layout = 'ucenter_new';
+            $this->view = 'ucenter_new';
+
+            $log_str = sprintf('from ip[%s] uid[%d] in new ucenter', 
+                $this->request->clientIp(), $uid);
+            CakeLog::write('info', $log_str);
+        }
+    }
+
+    function invite() {
+        $this->layout = 'ucenter_new';
+        // check if user logged in
+        if (empty($this->Session->read('uid'))) {
+            $this->redirect(
+                array("controller" => "users", "action" => "login")
+            );
+        }
+        // user already logged in
+        $uid = CakeSession::read('uid');
+
+        // cake_users related db begin
+        $this->loadModel('User');
+        $conditions = array(
+            'uid' => $uid,
+        );
+        $user_rec = $this->User->find('first',
+            array(
+                'conditions' => $conditions,
+            )
+        );
+        if (empty($user_rec)) {
+            $log_str = sprintf('ip[%s] uid[%d] in invite, get user rec empty', 
+                $this->request->clientIp(), $uid);
+            CakeLog::write('warning', $log_str);
+            return;
+        }
+
+        $uniq_md5 = $user_rec['User']['uniq_md5'];
+        $this->set('uniq_md5', $uniq_md5);
+
+        $this->set('user_info', $user_rec['User']);
+
+        // get voucher recs, cake_vouchers related begin
+        $this->loadModel('Voucher');
+        $time_now = date('Y-m-d H:i:s', time());
+        $conditions = array(
+            'uid' => $uid,
+            'expire >=' => $time_now,
+        );
+        $voucher_recs = $this->Voucher->find('all',
+            array(
+                'conditions' => $conditions,
+                'limit' => $this->USER_VOUCHER_SELECT_LIMIT,
+            )
+        );
+
+        $total_voucher_count = count($voucher_recs);
+
+        for ($idx = 0; $idx < $total_voucher_count; ++$idx) {
+            $remaining_days = $this->get_remaining_days(
+                $voucher_recs[$idx]['Voucher']['expire']);
+            $voucher_recs[$idx]['Voucher']['remaining_days'] = $remaining_days;
+        }
+
+        $this->set('total_voucher_count', $total_voucher_count);
+        $this->set('voucher_recs', $voucher_recs);
+
+        // cake_ivisits related begin
+        $this->loadModel('Ivisit');
+        $conditions = array(
+            'invite_md5' => $uniq_md5,
+        );
+        $uniq_visit_count = $this->Ivisit->find('count',
+            array(
+                'fields' => 'distinct req_ip',
+                'conditions' => $conditions,
+            )
+        );
+        $this->set('uniq_visit_count', $uniq_visit_count);
+
+        $total_visit_count = $this->Ivisit->find('count',
+            array(
+                'conditions' => $conditions,
+            )
+        );
+        $this->set('total_visit_count', $total_visit_count);
+
+        // log for page action
+        $log_str = sprintf('uid[%s] ip[%s] in invite page', 
+                $uid, $this->request->clientIp());
+        CakeLog::write('info', $log_str);
+
+    }
+
+    private function get_remaining_days($expire_datetime) {
+        $expire_second = strtotime($expire_datetime);
+        $now_second = time();
+        $remain_second = $expire_second - $now_second;
+        $remain_day = (int)($remain_second / (60 * 60 * 24));
+
+        if ($remain_day < 0) {
+            return 0;
+        }
+
+        return $remain_day;
+    }
+
+    function buy_ss() {
+        $this->layout = 'ucenter_new';
+        //check if user logged in
+        if (empty($this->Session->read('uid'))) {
+            $this->redirect(
+                array("controller" => "users", "action" => "login")
+            );
+        }
+        // user already logged in
+        $uid = CakeSession::read('uid');
+
+        // select basic line info from db
+        $this->loadModel('Line');
+        $conditions = array(
+            'acclevel' => 'basic',
+            'status' => $this->LINE_AVAILABLE_STATUS,
+        );
+
+        $basic_lines = $this->Line->find('all',
+            array(
+            'conditions' => $conditions,
+            )
+        );
+
+        $this->set('basic_single_lines_arr', $basic_lines);
+        $lines_count = count($basic_lines);
+        $this->set('lines_count', $lines_count);
+
+        $log_str = sprintf('from ip[%s] uid[%d] in buy_ss', 
+            $this->request->clientIp(), $uid);
+        CakeLog::write('info', $log_str);
+
+//       redirect to url with function params
+//        $this->redirect(
+//            array(
+//                'controller' => 'users',
+//                'action' => 'info',
+//                'Congratulations!',   // header
+//                'Your order is in process.',  // detail
+//                'success',  // style
+//            )
+//        );
+        
+    }
+
+    function make_order($lineid=0) {
+        // check if user logged in
+        if (empty($this->Session->read('uid'))) {
+            $this->redirect(
+                array("controller" => "users", "action" => "login")
+            );
+        }
+
+        // user already logged in
+        $uid = CakeSession::read('uid');
+        $lineid = (int)$lineid;
+        $this->layout = 'ucenter_new';
+
+        $conditions = array(
+            'id' => $lineid,
+            'status' => $this->LINE_AVAILABLE_STATUS,
+        );
+
+        $this->loadModel('Line');
+        $line_info = $this->Line->find('first',
+            array(
+                'conditions' => $conditions,
+            )
+        );
+
+        if (empty($line_info)) {
+            $htext = '参数有误！';
+            $detail_info = '请确认您的操作流程无误！或联系客服解决！';
+            $style = 'negative';
+            $this->set_info($htext, $detail_info, $style);
+            $this->view = 'info';
+
+            $log_str = sprintf('from ip[%s] uid[%d] make order but lineinfo empty', 
+                $this->request->clientIp(), $uid);
+            CakeLog::write('warning', $log_str);
+            return;
+        }
+
+        $line_area = sprintf('%s / %s , %s / %s',
+            $line_info['Line']['country'],
+            $line_info['Line']['city'],
+            $line_info['Line']['country_cn'],
+            $line_info['Line']['city_cn']);
+
+        $this->set('line_area', $line_area);
+        $this->set('line_id', $line_info['Line']['id']);
+
+        $monthly_price = $line_info['Line']['monthly_price'] / 100;
+        $this->set('monthly_price', $monthly_price);
+
+        $this->set('acctype', $this->USER_BUY_NEW);
+
+        // get voucher info
+        $voucher_info = $this->get_uid_first_voucher($uid);
+        $this->set('voucher_info', $voucher_info);
+
+        $log_str = sprintf('from ip[%s] uid[%d] in make order', 
+            $this->request->clientIp(), $uid);
+        CakeLog::write('info', $log_str);
+    }
+
+    private function get_uid_first_voucher($uid) {
+        $voucher_info = '';
+        do {
+            if (Configure::read('enable_voucher_use') == 0) {
+                break;
+            }
+            $this->loadModel('Voucher');
+    
+            $time_now = date('Y-m-d H:i:s', time());
+            $voucher_conditions = array(
+                'uid' => $uid,
+                'is_valid' => $this->VOUCHER_VALID,
+                'expire >=' => $time_now,
+            );
+    
+            $voucher_info = $this->Voucher->find('first',
+                array(
+                    'conditions' => $voucher_conditions,
+                )
+            );
+
+            if (empty($voucher_info)) {
+                break;
+            }
+
+        } while (0);
+
+        return $voucher_info;
+    }
+
+    function advice() {
+        // check if user logged in
+        if (empty($this->Session->read('uid'))) {
+            $this->redirect(
+                array("controller" => "users", "action" => "login")
+            );
+        }
+
+        // user already logged in
+        $uid = CakeSession::read('uid');
+        $this->layout = 'ucenter_new';
+
+        $log_str = sprintf('uid[%s], ip[%s] in advice',
+             CakeSession::read('uid'), $this->request->clientIp());
+        CakeLog::write('info', $log_str);
+
+        if ($this->request->is('post')) {
+            $rdata = $this->request->data;
+
+            // to show save advice result, change view to 'info'
+            $this->view = 'info';
+            if (empty($rdata['vcode']) || strcasecmp($rdata['vcode'], $this->Session->read('vcode')) != 0) {
+                $htext = '失败！';
+                $detail_info = '验证码错误！';
+                $style = 'negative';
+                $this->set_info($htext, $detail_info, $style);
+                return ;
+            }
+
+            // vcode correct
+            $this->loadModel('Advice');
+            $data_row = array('content'=>$rdata['content'],
+                'uid' => $this->Session->read('uid')
+            );
+
+            $save_res = $this->Advice->save($data_row);
+            if (empty($save_res)) {
+                $htext = '失败！';
+                $detail_info = '系统正忙，请稍候再试！';
+                $style = 'negative';
+                $this->set_info($htext, $detail_info, $style);
+                return ;
+            }
+
+            // clear vcode to avoid attack
+            $this->Session->write('vcode', '');
+            $success_detail_info = "恭喜您提交建议成功！";
+            $success_detail_info .= "需要更快回复请加QQ " . $this->CONTACT_QQ_NUM;
+
+            $log_str = sprintf('uid[%s], ip[%s] save advice success.',
+                CakeSession::read('uid'), $this->request->clientIp());
+            CakeLog::write('info', $log_str);
+
+            $htext = '成功！';
+            $detail_info = $success_detail_info;
+            $style = 'success';
+            $this->set_info($htext, $detail_info, $style);
+            return;
+
+        }
+
+        // not post, show uid related advice records
+        $this->loadModel('Advice');
+        $conditions = array(
+            'uid' => $uid,
+        );
+
+        $advice_limit = 30;
+        $user_advices = $this->Advice->find('all',
+            array(
+                'conditions' => $conditions,
+                'order' => ' id desc ',
+                'limit' => $advice_limit,
+            )
+        );
+        // var_dump($user_advices);
+        $this->set('user_advices', $user_advices);
+
+        // for statistics
+        $total_num = count($user_advices);
+        $this->set('total_advices', $total_num);
+
+        $last_month_time = date('Y-m-d 00:00:00', strtotime('-1 month'));
+        $last_half_year_time = date('Y-m-d 00:00:00', strtotime('-6 month'));
+
+        // fetch last month count
+        $last_month_conditions = array(
+            'uid' => $uid,
+            'created >= ' => $last_month_time,
+        );
+        $last_month_count = $this->Advice->find('count',
+            array(
+                'conditions' => $last_month_conditions,
+            )
+        );
+        $this->set('last_month_count', $last_month_count);
+
+        // fetch last half year count
+        $last_half_year_conditions = array(
+            'uid' => $uid,
+            'created >= ' => $last_half_year_time,
+        );
+        $last_half_year_count = $this->Advice->find('count',
+            array(
+                'conditions' => $last_half_year_conditions,
+            )
+        );
+        $this->set('last_half_year_count', $last_half_year_count);
+
     }
 
     function buy_acc() {
@@ -423,6 +994,105 @@ class UsersController extends AppController
                 array("controller" => "users", "action" => "login")
             );
         }
+    }
+
+    function renew_ss($id = 0) {
+        // @in: id->port_id
+        $uid = $this->Session->read('uid');
+        // if not logged in
+        if (empty($uid)) {
+            $this->redirect(
+                array("controller" => "users", "action" => "login")
+            );
+        }
+
+        // port id
+        $id = (int)$id;
+
+        if (!is_int($id) || $id <= 0) {
+            $log_str = sprintf('param[%s] [%d] [%d] err when renew_ss', 
+                $id, is_int($id), $id < 0);
+            CakeLog::write('warning', $log_str);
+            $htext = '参数错误';
+            $detail_info = sprintf('参数%s非法！', $id);
+            $style = 'negative';
+            $this->redirect(
+                array("controller" => "users", "action" => "info",
+                $htext,
+                $detail_info,
+                $style,
+                )
+            );
+        }
+
+        // get id related records
+        $conditions = array(
+            'id' => $id,
+            'uid' => $uid,
+        );
+        $this->loadModel('Port');
+        $renew_port = $this->Port->find('first',
+            array(
+                'conditions' => $conditions,
+            )
+        );
+
+        // get empty port for $id
+        if (empty($renew_port)) {
+            $log_str = sprintf('portid[%d] uid[%d] get empty port record', 
+                $id, $uid);
+            CakeLog::write('warning', $log_str);
+            $htext = '数据错误!';
+            $detail_info = '未找到相关数据记录！';
+            $style = 'negative';
+            $this->redirect(
+                array("controller" => "users", "action" => "info",
+                $htext,
+                $detail_info,
+                $style,
+                )
+            );
+        }
+        $this->set('port', $renew_port['Port']);
+        $this->set('acctype', $this->OLD_CONTINUE);
+
+        // get renew monthly price
+        $this->loadModel('Line');
+        $line_conditions = array(
+            'id' => $renew_port['Port']['line_id'],
+            'status' => $this->LINE_AVAILABLE_STATUS,
+        );
+        $line_info = $this->Line->find('first',
+            array(
+                'conditions' => $line_conditions,
+            )
+        );
+
+        if (empty($line_info)) {
+            $log_str = sprintf('portid[%d] uid[%d] line_id[%d] get empty line record', 
+                $id, $uid, $renew_port['Port']['line_id']);
+            CakeLog::write('warning', $log_str);
+            $htext = '数据错误!';
+            $detail_info = '抱歉！未找到线路相关数据记录！请联系客服解决。';
+            $style = 'negative';
+            $this->redirect(
+                array("controller" => "users", "action" => "info",
+                $htext,
+                $detail_info,
+                $style,
+                )
+            );
+        }
+
+        $renew_monthly_price = $line_info['Line']['monthly_price'] / 100;
+
+        $this->set('renew_monthly_price', $renew_monthly_price);
+
+        // get voucher info
+        $voucher_info = $this->get_uid_first_voucher($uid);
+        $this->set('voucher_info', $voucher_info);
+
+        $this->layout = 'ucenter_new';
     }
 
     function renew_acc() {
@@ -681,6 +1351,36 @@ class UsersController extends AppController
     protected function set_message($htext, $detail_info) {
         $this->set('htext', $htext);
         $this->set('detail_info', $detail_info);
+    }
+
+    private function set_info($htext, $detail_info, $style) {
+        $this->set_message($htext, $detail_info);
+        $this->set('ui_style', $style);
+    }
+
+    function info($htext, $detail_info, $style, $type=1) {
+        $this->layout = 'ucenter_new';
+        //check if user logged in
+        if (empty($this->Session->read('uid'))) {
+            $this->redirect(
+                array("controller" => "users", "action" => "login")
+            );
+        }
+        // user already logged in
+        $uid = CakeSession::read('uid');
+
+//        $htext = '页面成功';
+//        $detail_info = '恭喜你完成啦！';
+//        $style = 'success';
+        $this->set_info($htext, $detail_info, $style);
+
+        if ($type != $this->NORMAL_INFO_TYPE) {
+            // user like page, type=2
+            $log_str = sprintf('get user support,' 
+                . ' from ip[%s] uid[%d] like YTJ. type[%d]', 
+                $this->request->clientIp(), $uid, $type);
+            CakeLog::write('info', $log_str);
+        }
     }
 
     function login() {

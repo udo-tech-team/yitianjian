@@ -114,13 +114,6 @@
             </tr>
 
             <tr>
-                <td> 线路
-                </td>
-                <td> 美国Los Angeles
-                </td>
-            </tr>
-
-            <tr>
                 <td> 订单价格
                 </td>
                 <td> ￥<?php echo $record['price']/100; ?>

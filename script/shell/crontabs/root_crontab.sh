@@ -6,7 +6,8 @@
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games
 
 filename=$(date +%Y-%m-%d-%H-%M-%S)
-dir_out='/home/alice/root_crontab_out/'
+cur_dir=$(pwd)
+dir_out=${cur_dir}'/root_crontab_out/'
 mkdir -p $dir_out
 out_file=$dir_out$filename
 touch $out_file

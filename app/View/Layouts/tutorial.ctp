@@ -358,7 +358,11 @@ echo $this->Html->url([
         </div>
           <p class="signout-comment">
           <a class="btn btn-info" data-signin-link="true" data-toggle="modal" href="<?php 
-                echo $this->Html->url('/');
+            echo $this->Html->url([
+                'controller' => 'tutorial',
+                'action' => 'trial_port',
+                 '#' => 'free',
+            ]);
             ?>">
       免费获取试用账号
 </a>  </p>

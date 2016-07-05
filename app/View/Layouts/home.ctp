@@ -18,6 +18,7 @@
         echo $this->Html->css('skin-red');
         echo $this->Html->css('downloadPage');
         echo $this->Html->css('stylecss');
+        echo $this->Html->css('user_defined');
 
         echo $this->fetch('mata');
         //echo $this->fetch('css');
@@ -63,6 +64,7 @@
             text-align: center;
         }
     }
+    
     </style>
 
 <div class="modal fade" id="myModal">
@@ -90,7 +92,7 @@
                         <!--a type="button" class="btn btn-warning" data-toggle="modal" data-target="#myModal">购买</a-->
 
         <div class="main-header">
-        <a href="<?php echo $this->Html->url('/'); ?>" class="logo"><i class="fa fa-cart-arrow-down"></i> 倚天剑</a>
+        <a href="<?php echo $this->Html->url('/'); ?>" class="logo"> 倚天剑<span class="smallfont">shadow</span></a>
         <!-- Header Navbar: style can be found in header.less -->
             <div class="navbar navbar-static-top">
                             <!--ul class="nav navbar-nav">
@@ -137,7 +139,7 @@
                 <div class="focus-content" >
                         
                     <dl>
-                        <dt>倚天剑</dt>
+                        <dt>倚天剑<span class="smallfont">shadow</span></dt>
                         <dd>发布shadowsocks科学上网（翻*墙）账号的平台！</dd>
                     </dl>
                     <dl>
@@ -145,8 +147,8 @@
                         <dd>无需任何技术基础，查看教程即能学会使用shadowsocks账号登录谷歌、脸书、推特，好用到没朋友！</dd>
                     </dl>
                     <dl>
-                        <dt>注册即送体验vip账号</dt>
-                        <dd>活动期间，注册账号即送vip体验账号，让您翻*墙畅游！</dd>
+                        <dt>免费体验</dt>
+                        <dd>无需注册购买即可体验ss账号，让您翻*墙畅游！注册邀请好友赚金币！</dd>
                     </dl>
                 </div>
             </div>
@@ -177,7 +179,7 @@
 
           <div class="col-md-4">
             <h2>免费体验</h2>
-            <p>本站提供免费体验账号，注册成功后送vip账号。</p>
+            <p>本站提供免费体验账号，注册成功即可购买vip账号，邀请好友还能赚金币哦。</p>
             <p><a href="<?php 
                     echo $this->Html->url([
                     'controller' => 'tutorial',

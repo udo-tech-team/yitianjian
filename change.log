@@ -70,7 +70,7 @@ Revision xx, ==> fix cake_users uid to id
 
 #TODO 2016.5.29
 done -> 1. add trial port 
-2. script add auto delete/add trail port function
+done -> 2. script add auto delete/add trail port function
 3. user pays an unfinished order while he has already had a using port.
     update alipay return logic block code
 done -> 4. iptables upgrade to timely delete blocked ips
@@ -81,3 +81,41 @@ done -> 5. auto reset expired port
 finish page seo 
 # 2016.6.8
 1. add merchant -> customer advice/answer page
+2. mutt can't send non-qq emails
+3. develop a tool to see daily statistics
+4. add change domain name server resolve script  -> auto change(add/delete) a domain name resolve
+
+#2016.6.30
+1. 6.29 history break point: 10 users paid with total day revenue of 30RMB
+2. add YTJ admin account:
+        A       app/View/Layouts/sucenter.ctp
+        A       app/View/Su/sucenter.ctp
+        A       app/Controller/SuController.php
+        as now we should focus on user experience, admin account 2b added next step
+
+#2016.7.1
+1. user fabric to deploy/manage multiple servers
+2. prepare 0to1 new server deploy scripts, enable a newly added server run ss service
+
+#2016.7.2
+Notice:
+    newly deployed server in vultr will be at full netflow when ever you get it started!
+    This feature will enable customers to enjoy no netflow limit when using ss service!
+        TODO:
+            script timely detect if an instance is running out of netflow,
+            if out ot netflow:
+                1. deploy a new instance which will be at full flow.
+                2. change domain resolve to new instance
+                3. delete original instance
+        Amazing invention!
+        REMEMBER:
+            restore logs of original instance to a data center instance
+
+# 2016.7.2
+ new ucenter version put online NOTICE:
+    1. all features fully tested!
+    2. newly added db tables, source sql and insert correct data!
+
+# 2016.7.3
+build a testing env for YTJ web
+    ==> use 2t vps as web server to test

@@ -15,12 +15,16 @@ class OrdersController extends AppController
 
     private $ORDER_ALREADY_PAID = 1;
     private $NOT_PAID = 0;
+    private $ORDER_USE_VOUCHER = 1;
+
+    private $USER_LINE_ID_FRONT_NAME = 'line_id';
+    private $VOUCHER_VALID = 1;
 
     //add security xx=>false to allow cross controller session
     //add beforeFilter to allow post register data
     public function beforeFilter() {
         parent::beforeFilter();
-        if (isset($this->Security)) { //&& isset($this->Auth)) {
+        if (isset($this->Security)) { //&& isset($this->Auth)) 
             //$this->Auth->allow('index', 'register');
             //$this->Security->config('unlockedActions', 'register');
             $this->Security->validatePost = false;
@@ -248,8 +252,78 @@ else {
         // already log in
     }
 
+    private function use_voucher_price($uid, $total, $voucher_id) {
+        // validate voucher_id with uid, recalculate total price 
+        // @in: $total -> RBM Yuan unit, 
+        //          while 'amount' field in record is RMB cent unit
+        // @return: new total price
+        $uid = (int)($uid);
+        $total = (int) $total;
+        $voucher_id = (int) $voucher_id;
+
+        if ($uid <= 0 || $total < 0 || $voucher_id < 0) {
+            $log_str = sprintf('get invalid param. uid[%d] total[%d] voucher[%d]', 
+                $uid, $total, $voucher_id);
+            CakeLog::write('warning', $log_str);
+            return $total;
+        }
+
+        // validate voucher is correct
+        $this->loadModel('Voucher');
+        $time_now = date('Y-m-d H:i:s', time());
+        $conditions = array(
+            'uid' => $uid,
+            'is_valid' => $this->VOUCHER_VALID,
+            'expire >=' => $time_now,
+        );
+
+        $voucher_info = $this->Voucher->find('first',
+            array(
+            'conditions' => $conditions,
+            )
+        );
+
+        if (empty($voucher_info)) {
+            $log_str = sprintf('get empty voucher. uid[%d] total[%d] voucher[%d]', 
+                $uid, $total, $voucher_id);
+            CakeLog::write('warning', $log_str);
+            return $total;
+        }
+
+        $voucher_item = $voucher_info['Voucher'];
+        // var_dump($voucher_item);
+        // total / new_total in Yuan while amount in Cent unit
+        $new_total = ($total * 100 - $voucher_item['amount']) / 100;
+
+        if ($new_total <= 0) {
+            $log_str = sprintf('error. uid[%d] total[%d] voucher[%d] new_total[%d]', 
+                $uid, $total, $voucher_id, $new_total);
+            CakeLog::write('warning', $log_str);
+            return $total;
+        }
+
+        // TODO update voucher is_valid to invalid status
+
+        $log_str = sprintf('success. uid[%d] total[%d] voucher[%d] new_total[%d]', 
+            $uid, $total, $voucher_id, $new_total);
+        CakeLog::write('info', $log_str);
+
+        return $new_total;
+    }
+
     // get post data and send payment request to alipay
     function alicreate() {
+        // 1. check data valid
+        // 2. collect data and send to alipay
+
+        $rdata = $this->request->data;
+        // to check if user choosed use_voucher
+        if (array_key_exists('use_voucher', $rdata)) {
+            $check_box = $rdata['use_voucher'][0];
+            // var_dump($check_box);
+            // var_dump($check_box > 0);
+        }
+        // var_dump($this->request->data);
         $this->view = 'empty';
         $uid = CakeSession::read('uid');
         if (empty($uid)) {
@@ -356,18 +430,69 @@ else {
             . rand(10000000,99999999) . substr($uid_hash, -4);  // '201511142349jjdiei';
         // $show_url = 'http://www.ashadowsocks.com/'; //$_POST['WIDshow_url'];
         $show_url = Router::url(array('controller'=>'orders', 'action'=>'show'), true);
+
+        if (Configure::read('new_user_center') > 0) {
+            // remember the line to alloc
+            $line_id = 0;
+            if (array_key_exists($this->USER_LINE_ID_FRONT_NAME,
+                    $rdata)) {
+                $line_id = (int)($rdata[$this->USER_LINE_ID_FRONT_NAME]);
+                $dataRow['line_id'] = $line_id;
+            }
+            //  remember the renewing port
+            if (array_key_exists('port_id', $rdata)) {
+                $dataRow['port_id'] = (int)($rdata['port_id']);
+            }
+            // record voucher, disable related voucher once order created
+            do {
+                if (Configure::read('enable_voucher_use') == 0) {
+                    break;
+                }
+                if (!array_key_exists('use_voucher', $rdata)) {
+                    // use didn't have voucher or didn't choose use voucher
+                    break;
+                }
+                if ((int)($rdata['use_voucher'][0]) == $this->ORDER_USE_VOUCHER) {
+                    // user has voucher and choose to use it
+                    $voucher_id = (int)$rdata['voucher_id'];
+                    $new_total = $this->use_voucher_price($uid, 
+                        $total_price, $voucher_id);
+
+                    if ($new_total == $total_price) {
+                        $log_str = sprintf('user[%d] total_price[%d] no change' . 
+                            ' after use voucher[%d]', 
+                            $uid, $total_price, $voucher_id);
+                        CakeLog::write('warning', $log_str);
+                        break;
+                    }
+                    // voucher valid, change total price, and record voucher_id 
+                    $total_price = $new_total;
+                    $dataRow['voucher_id'] = $voucher_id;
+                    $dataRow['discount_desc'] = 'voucher ticket';
+                }
+            } while (0);
+            // record discount description
+            // var_dump($dataRow);
+            // return;
+        }
+
+        $order_subject = '倚天剑shadow购买';
+        if ($acctype == 'old_continue') {
+            $order_subject = '倚天剑shadow续费';
+        }  
+
         //return;
         // volatile fields: show_url, out_trade_no, price, subject
         $order_param = array(
             'out_trade_no' => $out_trade_no,
-            'subject' => '倚天剑-shadowsocks账号购买/续费',
+            'subject' => $order_subject,
             'price' => $total_price,
             'show_url' => $show_url,
         );
 
         // create db order record
         $rdata = $this->request->data;
-        $dataRow = array(
+        $dataRowAppend = array(
             'out_trade_no' => $out_trade_no,
             'uid' => $uid,
             'acctype' => $acctype,
@@ -375,6 +500,8 @@ else {
             'months' => $months,
             'month_flow' => $monthly_netflow,
         );
+        $dataRow = array_merge($dataRow, $dataRowAppend);
+
         $save_res = $this->Order->save($dataRow);
         // var_dump($save_res);
 

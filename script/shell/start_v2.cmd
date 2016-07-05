@@ -14,5 +14,6 @@ else
 fi
 
 # start ss in manager mode
+ulimit -n 65535
 /usr/local/bin/ssserver --pid-file ${working_dir}shadowsocks.alice.pid --log-file ${working_dir}shadowsocks.alice.log  \
         --manager-address ${working_dir}shadowsocks-alice-manager.sock  -c ${working_dir}shadowsocks.json -d start \

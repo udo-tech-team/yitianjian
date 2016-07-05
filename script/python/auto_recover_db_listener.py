@@ -109,6 +109,8 @@ class RecoverListener:
 
         # set succ default to false
         is_succ = False 
+        # avoid: sometime GOONE Flase, all following actions disabled
+        self.uptp.GOON = True
         try:
             # quick_recover
             if cmd_str == self.QUICK_RECOVER:

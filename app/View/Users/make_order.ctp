@@ -1,10 +1,21 @@
 
-<div class="ui text container">
+<div class="ui container">
   <div class="ui segments">
 
     <!-- begin ui segment -->
     <div class="ui segment">
         <h2 class="ui center aligned header">购买shadowsocks账号</h2>
+    </div> <!-- end ui segment -->
+
+    <!-- begin ui segment -->
+    <div class="ui segment">
+  <div class="ui success message">
+    <div class="header">线路信息</div>
+    <ul class="list">
+      <li><?php echo $this->get('line_area'); ?></li>
+      <li><?php echo $this->get('monthly_price'); ?> 元/月</li>
+    </ul>
+  </div>
     </div> <!-- end ui segment -->
 
     <!-- begin ui segment -->
@@ -20,7 +31,7 @@ method='post'
 >
         <div class="required field">
           <label>期限（<?php 
-            echo Configure::read('account_types.user_buy_new.monthly_price'); ?>
+            echo $this->get('monthly_price'); ?>
             元/月）
           </label>
           <input type=hidden name="acctype" value="<?php echo $this->get('acctype'); ?>" />
@@ -34,6 +45,7 @@ method='post'
             <option value="12">12 个月</option>
 -->
           </select>
+          <input type="hidden" name="line_id" value="<?php echo $this->get('line_id'); ?>">
         </div>
         <div class="field">
         <div class="ui pointing label">
@@ -41,8 +53,54 @@ method='post'
             <?php echo date('Y-m-d', time()); ?>
             至
             <?php echo date('Y-m-d', strtotime('+1 month')); ?>
+            以此类推
         </div>
         </div>
+<?php 
+    $voucher_info = $this->get('voucher_info');
+    if (!empty($voucher_info)):
+        $voucher = $voucher_info['Voucher'];
+?>
+        <h4 class="ui dividing header">可用金币</h4>
+
+        <div class="field">
+<table class="ui table">
+  <thead>
+    <tr>
+      <th>券号</th>
+      <th>券额</th>
+      <th>创建时间</th>
+      <th>过期时间</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><?php echo $voucher['md5str']; ?></td>
+      <td><?php echo $voucher['amount'] / 100; ?></td>
+      <td><?php echo $voucher['created']; ?></td>
+      <td><?php echo $voucher['expire']; ?></td>
+    </tr>
+  </thead>
+</table>
+        </div>
+
+        <div class="field">
+        <div class="ui pointing label">
+            系统自动匹配最佳使用金币，下单后金币立即失效！不支持退还！
+        </div>
+        </div>
+
+  <div class="field">
+    <div class="ui checkbox">
+      <input type="checkbox" name="use_voucher[]" value="1" checked="checked">
+      <input type="hidden" name="voucher_id" value="<?php echo $voucher['id']; ?>">
+      <label>本次下单使用以上金币</label>
+    </div>
+  </div>
+<?php
+        endif;
+?>
+
         <button class='ui primary button'>购买</button>
       </form>
     </div> <!-- end ui segment -->
@@ -64,8 +122,8 @@ method='post'
     <!-- item begin-->
     <div class="item">
       <div class="content">
-        <div class="header">美国线路</div>
-        服务器位于美国Los Angeles，稳定快速，适合大众科学上网需求。
+        <div class="header">多地域线路</div>
+        服务器位于国外，稳定快速，适合大众科学上网需求。
       </div>
     </div>
     <!-- item end-->

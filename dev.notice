@@ -42,4 +42,20 @@ NOTICE:  2. & 3. should do at the same time when add a new coloum to a table
     status 0=>idle, 1=>user, 2=>deleted, from trial status to deleted status
                 3=>trial_port, 4=>merchant, 
                 8=>invalid, deleted. from in use status to deleted status
+2. cake_orders
+    is_paid 0=> not paid, 1=> already paid, 2=> related port info in updating status,
+            3=> related port info updated success
 
+[cakephp[
+update a field:
+    
+                    // increase invite_num field.
+                    $this->User->id = $inviting_user['User']['uid'];
+                    $invite_num = $inviting_user['User']['invite_num'] + 1;
+                    $this->User->saveField('invite_num', $invite_num);
+
+[new deploy YTJ]
+after svn co svn_url,
+    make app/tmp/cache/models  app/tmp/cache/persistent and chmod 777
+xxx.ass.yy
+    diable when the test env not used, otherwise it maybe curled by search engine and mislead users

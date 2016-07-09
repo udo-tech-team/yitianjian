@@ -75,8 +75,8 @@
             <!-- item begin-->
             <div class="item">
               <div class="content">
-                <div class="header">美国线路</div>
-                <p>目前开通了美国Los Angeles线路，更多线路正在拓展中。</p>
+                <div class="header">优质线路</div>
+                <p>目前开通了美国线路，更多线路正在拓展中。</p>
               </div>
             </div>
             <!-- item end-->

@@ -86,7 +86,7 @@ method='post'
 
         <div class="field">
         <div class="ui pointing label">
-            系统自动匹配最佳使用金币，下单后金币立即失效！不支持退还！
+            系统自动匹配最佳使用金币，订单总金额大于金币才会自动抵扣。若选择，下单后金币立即失效！不支持退还！
         </div>
         </div>
 

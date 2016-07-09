@@ -30,6 +30,8 @@ class UsersController extends AppController
     private $VOUCHER_VIA_INVITING = 2;
     private $VOUCHER_VALID = 1;
 
+    private $MAX_PORT_NUM_PER_USER = 10;
+
     // to avoid attach
     //      on average, every ip is allowed to visit n times 
     //      within a day via inviting page, see detail code
@@ -485,7 +487,7 @@ class UsersController extends AppController
         // user already logged in
         $uid = CakeSession::read('uid');
 
-        if (Configure::read('new_user_center') == 0) {
+    if (Configure::read('new_user_center') == 0) {
         // user buys an account or renews an account
         // update port info
         $this->loadModel('Order');
@@ -575,7 +577,7 @@ class UsersController extends AppController
                 $uid, $this->request->clientIp());
         CakeLog::write('info', $log_str);
 
-        } else 
+    } else 
 
 
 /********************************************************************/
@@ -673,6 +675,7 @@ class UsersController extends AppController
         $conditions = array(
             'uid' => $uid,
             'expire >=' => $time_now,
+            'is_valid' => $this->VOUCHER_VALID,
         );
         $voucher_recs = $this->Voucher->find('all',
             array(
@@ -789,6 +792,35 @@ class UsersController extends AppController
         $uid = CakeSession::read('uid');
         $lineid = (int)$lineid;
         $this->layout = 'ucenter_new';
+
+        // check user's port num
+        $this->loadModel('Port');
+        $time_now = date('Y-m-d H:i:s', time());
+        $port_conditions = array(
+            'uid' => $uid,
+            'expire >=' => $time_now,
+            'status' => $this->PORT_IN_USE,
+        );
+        $port_count = $this->Port->find('count',
+            array(
+                'conditions' => $port_conditions,
+            )
+        );
+        if ($port_count > $this->MAX_PORT_NUM_PER_USER) {
+            $htext = '账号数限制！';
+            $detail_info = sprintf('抱歉！每个用户最多可有%d个账号！',
+                $this->MAX_PORT_NUM_PER_USER);
+            $style = 'negative';
+            $this->set_info($htext, $detail_info, $style);
+            $this->view = 'info';
+
+            $log_str = sprintf('from ip[%s] uid[%d] deny make order, ' .
+                'num[%d] exceed max[%d]', 
+                $this->request->clientIp(), $uid, $port_count,
+                $this->MAX_PORT_NUM_PER_USER);
+            CakeLog::write('warning', $log_str);
+            return;
+        }
 
         $conditions = array(
             'id' => $lineid,

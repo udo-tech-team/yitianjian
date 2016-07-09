@@ -13,12 +13,25 @@ class OrdersController extends AppController
                             ),
     );
 
-    private $ORDER_ALREADY_PAID = 1;
-    private $NOT_PAID = 0;
+    private $NOT_PAID = 0;      // user just created an order
+    private $ORDER_ALREADY_PAID = 1;  // user paid in alipay, port 2b updated
+    private $PORT_UPDATE_INPROGRESS = 2; // port info in updating status, in progress
+    private $PORT_UPDATED = 3;  // port info updated success 
+
     private $ORDER_USE_VOUCHER = 1;
 
     private $USER_LINE_ID_FRONT_NAME = 'line_id';
     private $VOUCHER_VALID = 1;
+    private $VOUCHER_INVALID = 0;
+
+    private $OLD_CONTINUE = 'old_continue';
+    private $USER_BUY_NEW = 'user_buy_new';
+
+    private $DOMAINS_SEPERATOR  = ',';
+
+    private $PORT_AVAILABLE = 0;
+    private $PORT_IN_USE = 1;
+    private $PORT_ERROR = 2;
 
     //add security xx=>false to allow cross controller session
     //add beforeFilter to allow post register data
@@ -101,6 +114,21 @@ if($verify_result) {//验证成功
         $update_result = sprintf('alipay notify, out_trade_no[%s] update result[%s]',
              $out_trade_no, $up_res);
         CakeLog::write('info', $update_result);
+
+                // [alloc port for buy_new user] or [renew port for old user]
+                do {
+                    if (Configure::read('new_user_center') == 0) {
+                        break;
+                    }
+
+                    if ($this->update_user_port($trade_no) < 0) {
+                        $log_str = sprintf('update user port failed. trade_no[%s]',
+                            $trade_no);
+                        CakeLog::write('critical', $log_str);
+                        break;
+                    }
+                } while (0);
+
         echo "success";        //请不要修改或删除
 
         //调试用，写文本函数记录程序运行情况是否正常
@@ -192,7 +220,6 @@ else {
     }
 
     private function get_not_paid_order_count() {
-        // #TODO
         $uid = CakeSession::read('uid');
         // user not login, return limit to deny
         if (empty($uid)) {
@@ -254,9 +281,9 @@ else {
 
     private function use_voucher_price($uid, $total, $voucher_id) {
         // validate voucher_id with uid, recalculate total price 
-        // @in: $total -> RBM Yuan unit, 
-        //          while 'amount' field in record is RMB cent unit
-        // @return: new total price
+        // @in: $total -> RBM Cent unit, 
+        //          'amount' field in record is RMB cent unit
+        // @return: new total price, in RMB cent unit
         $uid = (int)($uid);
         $total = (int) $total;
         $voucher_id = (int) $voucher_id;
@@ -293,7 +320,7 @@ else {
         $voucher_item = $voucher_info['Voucher'];
         // var_dump($voucher_item);
         // total / new_total in Yuan while amount in Cent unit
-        $new_total = ($total * 100 - $voucher_item['amount']) / 100;
+        $new_total = ($total - $voucher_item['amount']);
 
         if ($new_total <= 0) {
             $log_str = sprintf('error. uid[%d] total[%d] voucher[%d] new_total[%d]', 
@@ -302,13 +329,54 @@ else {
             return $total;
         }
 
-        // TODO update voucher is_valid to invalid status
+        // update voucher is_valid to invalid status
+        $this->Voucher->id = $voucher_id;
+        $is_valid = $this->VOUCHER_INVALID;
+        $this->Voucher->saveField('is_valid', $is_valid);
 
-        $log_str = sprintf('success. uid[%d] total[%d] voucher[%d] new_total[%d]', 
-            $uid, $total, $voucher_id, $new_total);
+        $log_str = sprintf('success. uid[%d] total[%d] voucher_id[%d] discount[%d] new_total[%d]', 
+            $uid, $total, $voucher_id, $voucher_item['amount'], $new_total);
         CakeLog::write('info', $log_str);
 
         return $new_total;
+    }
+
+    private function calc_price_by_line_info($line_id, $months) {
+        // NOTICE:  monthly_price field in table is in RMB cent unit!!!
+        // @return: total_price, in RMB cent unit!!!
+        $line_id = (int)$line_id;
+        $months = (int)$months;
+
+        if ($line_id <= 0 || $months <= 0) {
+            $log_str = sprintf('uid[%s] line_id[%s] months[%s] param err', 
+                CakeSession::read('uid'), $line_id, $months);
+            CakeLog::write('warning', $log_str);
+
+            return -1;
+        }
+
+        $this->loadModel('Line');
+        $conditions = array(
+            'id' => $line_id,
+        );
+        $line_info = $this->Line->find('first',
+            array(
+            'conditions' => $conditions,
+            )
+        );
+
+        if (empty($line_info)) {
+            $log_str = sprintf('uid[%s] line_id[%s] months[%s] get empty line record', 
+                CakeSession::read('uid'), $line_id, $months);
+            CakeLog::write('warning', $log_str);
+
+            return -1;
+        }
+
+        $monthly_price = (int)($line_info['Line']['monthly_price']);
+        $total_price = $monthly_price * $months ;
+
+        return $total_price;
     }
 
     // get post data and send payment request to alipay
@@ -421,7 +489,7 @@ else {
         }
         //var_dump($months * $monthly_price);
         // price * 100, set to cent
-        $total_price = $months * $monthly_price;
+        $total_price = $months * $monthly_price * 100;
         $uid_hash = md5($uid);
         // var_dump($uid_hash);
         // out_trade_no format: datetime(14) + userid_md5(frist 4 char)
@@ -438,6 +506,14 @@ else {
                     $rdata)) {
                 $line_id = (int)($rdata[$this->USER_LINE_ID_FRONT_NAME]);
                 $dataRow['line_id'] = $line_id;
+            }
+
+            if ($line_id > 0 && Configure::read('get_price_from_line_info') != 0) {
+                // line_id valid and get from price from line info enabled
+                $total_price = $this->calc_price_by_line_info($line_id, $months);
+                $log_str = sprintf('uid[%s] get total price[%s], lineid[%s] months[%s]',
+                    $uid, $total_price, $line_id, $months);
+                CakeLog::write('info', $log_str);
             }
             //  remember the renewing port
             if (array_key_exists('port_id', $rdata)) {
@@ -477,7 +553,7 @@ else {
         }
 
         $order_subject = '倚天剑shadow购买';
-        if ($acctype == 'old_continue') {
+        if ($acctype == $this->OLD_CONTINUE) {
             $order_subject = '倚天剑shadow续费';
         }  
 
@@ -486,7 +562,7 @@ else {
         $order_param = array(
             'out_trade_no' => $out_trade_no,
             'subject' => $order_subject,
-            'price' => $total_price,
+            'price' => $total_price / 100,
             'show_url' => $show_url,
         );
 
@@ -496,7 +572,7 @@ else {
             'out_trade_no' => $out_trade_no,
             'uid' => $uid,
             'acctype' => $acctype,
-            'price' => $total_price * $this->CENT_PER_YUAN,
+            'price' => $total_price,
             'months' => $months,
             'month_flow' => $monthly_netflow,
         );
@@ -632,6 +708,323 @@ return $html_text;
 
     } // create_and_send2ali end
 
+    private function get_domains($line_id) {
+        // @in: line_id 
+        // @return: domains string, related with line_id
+
+        if ($line_id < 0) {
+            $log_str = sprintf('line_id[%d] err when try to get related domains!',
+                $line_id);
+            CakeLog::write('critical', $log_str);
+            return array();
+        }
+
+        $this->loadModel('Line');
+        $conditions = array(
+            'id' => $line_id,
+        );
+        $line_info = $this->Line->find('first',
+            array(
+            'conditions' => $conditions,
+            )
+        );
+        if (empty($line_info)) {
+            $log_str = sprintf('line_id[%d] get empty record!',
+                $line_id);
+            CakeLog::write('critical', $log_str);
+            return array();
+        }
+
+        return $line_info;
+
+    }
+
+    private function split2domain_arr($domains) {
+        // @in: domains string, coma seperated
+        // @return: single domain string array
+        $domains_arr = array();
+        if (empty($domains)) {
+            return $domains_arr;
+        }
+
+        $domains_arr = split($this->DOMAINS_SEPERATOR, $domains);
+
+        $dlen = count($domains_arr);
+        for($idx = 0; $idx < $dlen; $idx++) {
+            $domains_arr[$idx] = trim($domains_arr[$idx]);
+        }
+
+        return $domains_arr;
+    }
+
+    private function alloc_port($order_item) {
+        // @return: 0 for success, -1 for failure
+
+        $acctype = $order_item['acctype'];
+        $uid = $order_item['uid'];
+        $trade_no = $order_item['trade_no'];
+        $is_paid = $order_item['is_paid'];
+        $line_id = $order_item['line_id'];
+        $months = $order_item['months'];
+
+        if ($acctype != $this->USER_BUY_NEW 
+                || $is_paid != $this->PORT_UPDATE_INPROGRESS) {
+            $log_str = sprintf('acctype[%s] is_paid[%d] unexpected for ' .
+                'trade_no[%s] in alloc_port()',
+                $acctype, $is_paid, $trade_no);
+            CakeLog::write('critical', $log_str);
+            return -1;
+        }
+
+        // get line_id related domains
+        $line_info = $this->get_domains($line_id);
+        if (empty($line_info)) {
+            $log_str = sprintf('unexpected err. line_id[%d] get empty record!', 
+                $line_id);
+            CakeLog::write('critical', $log_str);
+            return -1;
+        }
+        $domains = $line_info['Line']['domains'];   // string like 'gso.hk,uwill.pw'
+        $domains_arr = $this->split2domain_arr($domains);
+
+        if (empty($domains_arr)) {
+            $log_str = sprintf('line_id[%d] domains_arr empty! original str[%s]', 
+                $line_id, $domains);
+            CakeLog::write('critical', $log_str);
+            return -1;
+        }
+
+        // do the port booking logic with table locked
+        $errno = 0;   // default no err
+
+        $this->loadModel('Port');
+        $dbo = $this->Port->getDataSource();
+        $lock_query = sprintf('LOCK TABLES %s AS %s WRITE;', 
+                $this->Port->tablePrefix . $this->Port->table, $this->Port->alias);
+        $unlock_query = "UNLOCK TABLES";
+
+        do {
+              if (!$dbo->execute($lock_query)) {
+                  $unlock_res = $dbo->execute($unlock_query);
+                  $log_str = sprintf('uid[%s], unlock_res[%s], ' . 
+                      'trade_no[%s]. lock table failed', 
+                        $uid, $unlock_res, $trade_no);
+                  CakeLog::write('critical', $log_str);
+                  $errno = 1;
+                  break;
+              }
+              //find first available port
+              $conditions = array(
+                  'sshost' => $domains_arr,
+                  'status' => $this->PORT_AVAILABLE,
+                  'uid' => 0,
+                  'mtid' => 0,
+              );
+              $avail_port = $this->Port->find('first',
+                  array(
+                      'conditions'=> $conditions,
+                    )
+                );
+
+              if (!$avail_port) {
+                  $unlock_res = $dbo->execute($unlock_query);
+                  $log_str = sprintf('uid[%s], trade_no[%s] unlock_res[%s] empty avail_port', 
+                        $uid, $trade_no, $unlock_res);
+                  CakeLog::write('critical', $log_str);
+                  $errno = 2;
+                  break;
+              }
+
+              $duration = $months;
+              $expire = date('Y-m-d H:i:s', strtotime("+$duration month"));
+              $up_data = array(
+                  'status' => $this->PORT_IN_USE,
+                  'uid' => $uid,
+                  'modified' => 'now()',
+                  'expire' => '"' . $expire . '"',
+              );
+              $up_cond = array('id' => $avail_port['Port']['id']);
+              $up_res = $this->Port->updateAll($up_data, $up_cond);
+  
+              $unlock_res = $dbo->execute($unlock_query); // if success returns true
+              $log_str = sprintf('uid[%s] trade_no[%s] unlock_res[%s]',
+                    $uid, $trade_no, $unlock_res);
+              CakeLog::write('info', $log_str);
+
+        } while (0);
+
+        if ($errno > 0) {
+            $log_str = sprintf('uid[%d] trade_no[%s] alloc port failed. err no[%d]', 
+                    $uid, $trade_no, $errno);
+            CakeLog::write('critical', $log_str);
+            // unlock tables
+            $unlock_res = $dbo->execute($unlock_query); // if success returns true
+            return -1;
+        }
+
+        return 0;
+    }
+
+    private function renew_port($order_item) {
+        // @return: 0 for success, -1 for failure
+
+        $acctype = $order_item['acctype'];
+        $uid = $order_item['uid'];
+        $trade_no = $order_item['trade_no'];
+        $is_paid = $order_item['is_paid'];
+        $port_id = $order_item['port_id'];
+
+        if ($acctype != $this->OLD_CONTINUE
+                || $is_paid != $this->PORT_UPDATE_INPROGRESS) {
+            $log_str = sprintf('acctype[%s] is_paid[%d] unexpected for ' .
+                'trade_no[%s] in renew_port()',
+                $acctype, $is_paid, $trade_no);
+            CakeLog::write('debug', $log_str);
+            return -1;
+        }
+
+        $this->loadModel('Port');
+        $conditions = array(
+            'id' => $port_id,
+            'status' => $this->PORT_IN_USE,
+            'uid' => $uid,
+        );
+        $port_info = $this->Port->find('first',
+            array(
+            'conditions' => $conditions,
+            )
+        );
+
+        if (empty($port_info)) {
+            $log_str = sprintf('uid[%d] port_id[%d] unexpected for ' .
+                'trade_no[%s] in alloc_port()',
+                $uid, $port_id, $trade_no);
+            CakeLog::write('debug', $log_str);
+            return -1;
+        }
+        $port_item  = $port_info['Port'];
+
+        $old_expire = $port_item['expire'];
+        $add_month = $order_item['months'];
+        $new_expire = date('Y-m-d H:i:s', 
+                strtotime("$old_expire + $add_month month"));
+
+        $this->Port->id = $port_id;
+        $up_res = $this->Port->saveField('expire', $new_expire);
+        $log_info = sprintf('uid[%d] port_id[%d] trade_no[%s] update res[%d]',
+            $uid, $port_id, $trade_no, $up_res);
+
+        // update expire field according to port_id
+        return 0;
+    }
+
+    //@function: update user's port
+    //      1. user_buy_new, alloc a new port
+    //      2. old_continue, change expire time of related port
+    //@return: non zero : success, -1 : failed.
+    private function update_user_port($trade_no) {
+        // 1.get trade_no related paid but not_updated records,
+        //      not_updated means not update port info
+        // 2.update to port_update_inprogress, 
+        //      to avoid another request modify at the same time
+        // 3.update the port
+        //      a. user_buy_new, alloc a new port
+        //      b. old_continue, reset expire date
+        $conditions = array(
+            'trade_no' => $trade_no,
+            'is_paid' => $this->ORDER_ALREADY_PAID,
+        );
+        $order_info = $this->Order->find('first',
+            array(
+            'conditions' => $conditions,
+            )
+        );
+
+        if (empty($order_info)) {
+            $log_str = sprintf('get empty paid order for trade_no[%s]' .
+                ', port info maybe already updated.',
+                $trade_no);
+            CakeLog::write('debug', $log_str);
+            return 1;
+        }
+
+        // update is_paid field as soon as possible, as table is not locked.
+        $updateFields = array(
+            'is_paid' => $this->PORT_UPDATE_INPROGRESS,
+        );
+        $up_res = $this->Order->updateAll(
+            $updateFields,
+            $conditions
+        );
+
+        if (!$up_res) {
+            $log_str = sprintf('update is_paid field failed. trade_no[%s]' .
+                ', this may occur by concurrent write db.',
+                $trade_no);
+            CakeLog::write('critical', $log_str);
+            return -1;
+        }
+
+        // order_info has already changed !!!
+        // is_paid successfully updated in db, this record update relatively
+        $order_info['Order']['is_paid'] = $this->PORT_UPDATE_INPROGRESS;
+
+        // update order is_paid to paid_and_updated, then update user's port info
+        //      acctype may in (user_buy_new, old_continue)
+        //          1. user_buy_new, alloc a port to uid according to line_id
+        //              param: uid, months, line_id
+        //          2. old_continue, update expire field according to months
+        //              param: uid, months, port_id
+        $order_item = $order_info['Order'];
+        $acctype = $order_item['acctype'];
+
+        $ret = -1;
+        if ($acctype == $this->USER_BUY_NEW) {
+            $ret = $this->alloc_port($order_item);
+        } else if ($acctype == $this->OLD_CONTINUE) {
+            $ret = $this->renew_port($order_item);
+        } else {
+            $log_str = sprintf('update order but acctype[%s] unknow.' . 
+                ' trade_no[%s] acctype[%s]',
+                $acctype, $trade_no, $acctype);
+            CakeLog::write('critical', $log_str);
+        }
+
+        if ($ret < 0) {
+            $log_str = sprintf('update user port or alloc port failed.' . 
+                ' trade_no[%s] acctype[%s]',
+                $trade_no, $acctype);
+            CakeLog::write('critical', $log_str);
+            return -1;
+        }
+
+        // port updated success, update is_paid to port_udpated
+        $up_conditions = array(
+            'trade_no' => $trade_no,
+            'is_paid' => $this->PORT_UPDATE_INPROGRESS,
+        );
+        $up_fields = array(
+            'is_paid' => $this->PORT_UPDATED,
+        );
+        $up_res = $this->Order->updateAll(
+            $up_fields,
+            $up_conditions
+        );
+
+        if (!$up_res) {
+            $log_str = sprintf('update is_paid field failed. trade_no[%s]' .
+                ', this means order is_paid still in port updating progress ' . 
+                'while actually port is already succ updated',
+                $trade_no);
+            CakeLog::write('critical', $log_str);
+            return -1;
+        }
+        
+        return 0;
+    }
+
+
+    // soon after user paid, alipay redirect to this page(action)
     function ss_ali_return_url() {
         require_once(ROOT . DS . 'app' . DS . 'Vendor' . DS . 'alipay.config.php');
         require_once(ROOT . DS . 'app' . DS . 'Vendor' . 
@@ -683,6 +1076,21 @@ return $html_text;
                 $update_result = 'alipay return, out_trade_no=' . $out_trade_no
                         . ', update result=' . $up_res;
                 CakeLog::write('info', $update_result);
+
+                // [alloc port for buy_new user] or [renew port for old user]
+                do {
+                    if (Configure::read('new_user_center') == 0) {
+                        break;
+                    }
+
+                    if ($this->update_user_port($trade_no) < 0) {
+                        $log_str = sprintf('update user port failed. trade_no[%s]',
+                            $trade_no);
+                        CakeLog::write('critical', $log_str);
+                        break;
+                    }
+                } while (0);
+
                 $this->redirect(
                         array("controller" => "users", "action" => "ucenter")
                 );

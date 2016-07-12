@@ -27,7 +27,7 @@ class UsersController extends AppController
     private $LINE_AVAILABLE_STATUS = 0;
     private $USER_VOUCHER_SELECT_LIMIT = 30;
     private $VOUCHER_VIA_REGISTER = 2;
-    private $VOUCHER_VIA_INVITING = 2;
+    private $VOUCHER_VIA_INVITING = 1;
     private $VOUCHER_VALID = 1;
 
     private $MAX_PORT_NUM_PER_USER = 10;

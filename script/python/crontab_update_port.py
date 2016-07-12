@@ -39,6 +39,8 @@ class UpdatePort:
     ACCIDENT_RECOVER = 'accident_recover'
     # trial_port status
     trial_status = 3
+    # trial_port deleted status
+    trial_deleted_status = 2
     # merchant_port status
     merchant_status = 4
     # in use status
@@ -443,7 +445,8 @@ class UpdatePort:
         exec_succ = False
         try:
             self.dbObj = Database.MysqlObj()
-            sql_query = 'select ssport, sspass from cake_ports'
+            sql_query = 'select ssport, sspass from cake_ports not in (%d, %d) '\
+                    % (self.trial_deleted_status, self.port_invalid_status)
             count, all_res = self.dbObj.find_all(sql_query)
             log_str = 'query[%s] record count[%d]' % (sql_query, count)
             if count >= 1:

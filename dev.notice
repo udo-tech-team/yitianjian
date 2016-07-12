@@ -10,6 +10,10 @@
     "persistent/myapp_cake_core_method_cache"
     to make the new added field read by cakephp
 
+3. export tabls structure from db
+    # export ssserver tables user shadowsocks
+    mysqldump  --opt  -d ssserver -u shadowsocks -p   > ss.db.tables.sql
+
 mysql> select date_add(now(), interval '1,2' YEAR_MONTH);
 +--------------------------------------------+
 | date_add(now(), interval '1,2' YEAR_MONTH) |
@@ -39,12 +43,12 @@ NOTICE:  2. & 3. should do at the same time when add a new coloum to a table
 
 [define]
 1. cake_ports
-    status 0=>idle, 1=>user, 2=>deleted, from trial status to deleted status
+    status 0=>idle, 1=>in-use, 2=>deleted, from trial status to deleted status
                 3=>trial_port, 4=>merchant, 
-                8=>invalid, deleted. from in use status to deleted status
+                8=>invalid, deleted. from in-use status to deleted status
 2. cake_orders
     is_paid 0=> not paid, 1=> already paid, 2=> related port info in updating status,
-            3=> related port info updated success
+            3=> related port info updated success, 4 => order processed generate voucher
 
 [cakephp[
 update a field:

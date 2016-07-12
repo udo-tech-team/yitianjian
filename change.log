@@ -115,7 +115,19 @@ Notice:
  new ucenter version put online NOTICE:
     1. all features fully tested!
     2. newly added db tables, source sql and insert correct data!
+    3. enough port added to db tables and ssservers
 
 # 2016.7.3
 build a testing env for YTJ web
     ==> use 2t vps as web server to test
+
+# 2016.7.11
+add YTJ backup website/databse to avoid accident of aliyun service
+for multi domain multi server:
+    1. update related ssserver when delete/add port
+            a) crontab reset expired port
+            b) when use a backup instance to redirect flow in, the ports may not be updated,
+                better to restart the ssserver, read ports info from YTJ web host
+
+# 2016.7.12
+company create a bank account ==> in progress

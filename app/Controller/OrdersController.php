@@ -13,10 +13,13 @@ class OrdersController extends AppController
                             ),
     );
 
+    // order status begin
     private $NOT_PAID = 0;      // user just created an order
     private $ORDER_ALREADY_PAID = 1;  // user paid in alipay, port 2b updated
     private $PORT_UPDATE_INPROGRESS = 2; // port info in updating status, in progress
     private $PORT_UPDATED = 3;  // port info updated success 
+    private $ORDER_GENERATED_VOUCHER = 4;  // mark the order has generated a voucher
+    // order status end
 
     private $ORDER_USE_VOUCHER = 1;
 
@@ -32,6 +35,14 @@ class OrdersController extends AppController
     private $PORT_AVAILABLE = 0;
     private $PORT_IN_USE = 1;
     private $PORT_ERROR = 2;
+
+    // voucher get from inviting others
+    private $VOUCHER_GET_FROM_INVITING = 1;
+    // voucher get from register, invited by others
+    private $VOUCHER_GET_FROM_REGISTER = 2;
+
+    private $VOUCHER_VIA_REGISTER = 2;
+    private $VOUCHER_VIA_INVITING = 1;
 
     //add security xx=>false to allow cross controller session
     //add beforeFilter to allow post register data
@@ -123,6 +134,13 @@ if($verify_result) {//验证成功
 
                     if ($this->update_user_port($trade_no) < 0) {
                         $log_str = sprintf('update user port failed. trade_no[%s]',
+                            $trade_no);
+                        CakeLog::write('critical', $log_str);
+                        break;
+                    }
+
+                    if ($this->generate_inviting_voucher($trade_no) < 0) {
+                        $log_str = sprintf('generate inviting voucher failed. trade_no[%s]',
                             $trade_no);
                         CakeLog::write('critical', $log_str);
                         break;
@@ -842,6 +860,7 @@ return $html_text;
                   'uid' => $uid,
                   'modified' => 'now()',
                   'expire' => '"' . $expire . '"',
+                  'line_id' => $line_id,
               );
               $up_cond = array('id' => $avail_port['Port']['id']);
               $up_res = $this->Port->updateAll($up_data, $up_cond);
@@ -1023,6 +1042,114 @@ return $html_text;
         return 0;
     }
 
+    private function generate_inviting_voucher($trade_no) {
+        // @in: trade_no
+        // @return: 0 on success, -1 on failure
+
+        // 1. get order info, get voucher_id
+        // 2. get voucher info, get 'get_from'
+        // 3. if get_from == inviting, then end
+        //      else get_from == register, then add from_uid voucher
+
+        // get order info
+        $this->loadModel('Order');
+        $conditions = array(
+            'trade_no' => $trade_no,
+            'is_paid' => $this->PORT_UPDATED,
+        );
+        $order_info = $this->Order->find('first', array(
+            'conditions' => $conditions,
+        ));
+
+        if (empty($order_info)) {
+            $log_str = sprintf('get empty order, trade_no[%s] ip[%s]',
+                $trade_no, $this->request->clientIp());
+            CakeLog::write('critical', $log_str);
+            return -1;
+        }
+
+        $order_item = $order_info['Order'];
+        $voucher_id = $order_item['voucher_id'];
+
+        // order has no related voucher
+        if ($voucher_id == 0) {
+            $log_str = sprintf('voucher_id[%d], trade_no[%s] ip[%s], skip gen',
+                $voucher_id, $trade_no, $this->request->clientIp());
+            CakeLog::write('debug', $log_str);
+            return 0;
+        }
+
+        /// get voucher info
+        $this->loadModel('Voucher');
+        $vc_conditions = array(
+            'id' => $voucher_id,
+        );
+        $voucher_info = $this->Voucher->find('first', array(
+            'conditions' => $vc_conditions,
+        ));
+        if (empty($voucher_info)) {
+            $log_str = sprintf('get empty voucher, trade_no[%s] ip[%s]',
+                $trade_no, $this->request->clientIp());
+            CakeLog::write('warning', $log_str);
+            return -1;
+        }
+
+        $voucher_item = $voucher_info['Voucher'];
+        $get_from = $voucher_item['get_from'];
+
+        if ($get_from == $this->VOUCHER_GET_FROM_REGISTER) {
+            // generate a voucher for from_uid
+            $from_uid = $voucher_item['uid'];   // register user
+            $uid = $voucher_item['from_uid'];   // inviting user
+            $rand_num = rand(1000, 9999);
+            $date_time_now = date('Y-m-d H:i:s', time());
+            $md5_source = sprintf('%d-%d-%d-%s-%s',
+                $from_uid, $uid, $rand_num, $date_time_now, 
+                $this->request->clientIp());
+
+            $expire_after_k_months = 3;
+            $expire_datetime = date('Y-m-d H:i:s', 
+                strtotime("+$expire_after_k_months month"));
+
+            $log_str = sprintf('from_uid[%d] uid[%d] rand_num[%d]' .
+                ' expire[%s] md5_source[%s]', 
+                $from_uid, $uid, $rand_num, $expire_datetime, $md5_source);
+            CakeLog::write('debug', $log_str);
+
+            $data_row = array(
+                'md5str' => md5($md5_source),
+                'uid' => $uid,
+                'from_uid' => $from_uid,
+                'get_from' => $this->VOUCHER_VIA_INVITING,
+                'expire' => $expire_datetime,
+                'amount' => Configure::read('invite_user_money'),
+                'is_valid' => $this->VOUCHER_VALID,
+            );
+
+            $save_res = $this->Voucher->save($data_row);
+            if (empty($save_res)) {
+                $log_str = sprintf('save voucher failed, uid[%d] ' .
+                    ' from_uid[%d] rand_num[%d] ip[%s]',
+                    $uid, $from_uid, $rand_num, $this->request->clientIp());
+                CakeLog::write('warning', $log_str);
+                return -1;
+            }
+
+        } else {
+            $log_str = sprintf('voucher get_from[%d], trade_no[%s] ip[%s] skip gen',
+                $get_from, $trade_no, $this->request->clientIp());
+            CakeLog::write('debug', $log_str);
+        }
+
+        // no mater voucher generated or not, update processed
+        $update_data = array(
+            'is_paid' => $this->ORDER_GENERATED_VOUCHER,
+            );
+        $this->Order->updateAll($update_data, $conditions);
+
+        return 0;
+    }
+
 
     // soon after user paid, alipay redirect to this page(action)
     function ss_ali_return_url() {
@@ -1085,6 +1212,13 @@ return $html_text;
 
                     if ($this->update_user_port($trade_no) < 0) {
                         $log_str = sprintf('update user port failed. trade_no[%s]',
+                            $trade_no);
+                        CakeLog::write('critical', $log_str);
+                        break;
+                    }
+
+                    if ($this->generate_inviting_voucher($trade_no) < 0) {
+                        $log_str = sprintf('generate inviting voucher failed. trade_no[%s]',
                             $trade_no);
                         CakeLog::write('critical', $log_str);
                         break;

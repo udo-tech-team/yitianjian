@@ -55,6 +55,8 @@ class PortManagerServer:
     conf_file = 'conf/ssserver.manager.conf'
     sock = None
     timeout = 10
+    PORT_LIST_SEP = ','
+    PORT_PASS_SEP = '@'
 
     def __init__(self):
         pass
@@ -86,6 +88,8 @@ class PortManagerServer:
         """ init socket, listen to client's request"""
         # this depends on load_conf
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # reuse address, without waiting for natural timeout to expire
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind((self.conf['host'], (int)(self.conf['listen_port'])))
         self.sock.listen(1)
         log_str = 'socket init ok. %s' % (self.sock)
@@ -115,12 +119,29 @@ class PortManagerServer:
                     logging.debug(split_arr)
                     if split_arr[0] == self.conf['password']:
                         # password match, exec cmd
-                        cmd = split_arr[1]
+                        # port@pass,port@pass,...
+                        port_pass_str = split_arr[1]
+                        # [port@pass, port@pass]
+                        port_pass_arr = port_pass_str.split(self.PORT_LIST_SEP)
                         tlock.acquire()
-                        self.cli.send(cmd)
-                        res = self.cli.recv(1506)
-                        conn.sendall(res)
+                        for pp in port_pass_arr:
+                            port, passwd = pp.split(self.PORT_PASS_SEP)
+                            # remove port
+                            cmd = 'remove:{"server_port":%s}' % port
+                            self.cli.send(cmd)
+                            res = self.cli.recv(1506)
+                            log_str = 'remove_cmd[%s], res [%s]' % (cmd, res)
+                            logging.warning(log_str)
+
+                            # add port
+                            add_cmd = 'add:{"server_port":%s, "password":"%s"}' \
+                                    % (port, passwd)
+                            self.cli.send(add_cmd)
+                            res = self.cli.recv(1506)
+                            log_str = 'add_cmd[%s], res [%s]' % (add_cmd, res)
+                            logging.warning(log_str)
                         tlock.release()
+                        conn.sendall(res)
                     else:
                         # password unmatch, send default response
                         log_str = 'recv passwd[%s]' % (split_arr[0])

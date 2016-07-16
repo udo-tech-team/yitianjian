@@ -52,6 +52,8 @@ class UpdatePort:
     # add the port after expired for k days
     k_days_ago = 30
 
+    BATCH_INSERT_PORT_NUM = 100
+
     def __init__(self):
       logging.basicConfig(level=logging.DEBUG,
             format='%(asctime)s %(filename)s[%(lineno)s] %(levelname)s %(message)s',
@@ -116,6 +118,43 @@ class UpdatePort:
 
         cmd = 'add:{"server_port":' + str(port) + ',"password":"' + password + '"}'
         net_str = self.conf['password'] + self.conf['pass_cmd_seperator'] + cmd
+        self.sock.sendall(net_str)
+        exec_res = self.sock.recv(1024)
+
+        log_str = '[%s] exec res[%s]' % (net_str, exec_res)
+        if exec_res != 'ok':
+            logging.critical(log_str)
+            return False
+        else:
+            logging.info(log_str)
+
+        return True
+
+    def get_transformed_portpass(self, table_rec_list):
+        """ transform db records to [port@pass, port@pass] string list
+            @in: port records list
+            @return string list
+        """
+        pass
+
+    def insert_multi_port(self, port_pass_arr):
+        """ insert multi accounts in ssserver, port/password arr as param"""
+        # @in: [port@pass,port@pass,...], string list
+        # @return: True on success, otherwise False
+
+        if not self.GOON:
+            logging.warning('GOON is false, stop.')
+            return False
+        # 1. pack the ports/passwords,
+        # 2. send the package to remote ssserver
+        # 3. get result
+        # pack format: port@pass,port@pass......
+        if not isinstance(port_pass_arr, list):
+            self.GOON = False
+            logging.warning('input param err, stop.')
+            return False
+        pack_str = ','.join(port_pass_arr)
+        net_str = self.conf['password'] + self.conf['pass_cmd_seperator'] + pack_str
         self.sock.sendall(net_str)
         exec_res = self.sock.recv(1024)
 
@@ -455,19 +494,31 @@ class UpdatePort:
 
                 total_count = 0
                 succ_count = 0
+                cur_count = 0
+                port_pass_arr = []
                 for rec in all_res:
-                    # insert a rec
-                    insert_res = self.insert_port(rec[0], rec[1])
-                    if not insert_res:
-                        logging.critical("insert port failed. port[%s] pass[%s]" \
-                                % (rec[0], rec[1]))
-                    else:
-                        logging.info("insert port succ. port[%s] pass[%s]" \
-                                % (rec[0], rec[1]))
-                        succ_count += 1
-
+                    port_pass_str = '%d@%s' % (rec[0], rec[1])
+                    port_pass_arr.append(port_pass_str)
+                    cur_count += 1
                     total_count += 1
+                    if cur_count >= self.BATCH_INSERT_PORT_NUM:
+                        batch_res = self.insert_multi_port(port_pass_arr)
+                        log_str = 'insert count[%d] res[%s]' % (cur_count, batch_res)
+                        logging.warning(log_str)
+                        if batch_res:
+                            succ_count += cur_count
 
+                        #reset
+                        cur_count = 0
+                        port_pass_arr = []
+
+                if len(port_pass_arr) > 0:
+                        batch_res = self.insert_multi_port(port_pass_arr)
+                        log_str = 'last time. insert count[%d] res[%s]' \
+                                % (cur_count, batch_res)
+                        logging.warning(log_str)
+                        if batch_res:
+                            succ_count += cur_count
                 logging.info("finished insert. total[%s] succ[%s]" \
                         % (total_count, succ_count))
 

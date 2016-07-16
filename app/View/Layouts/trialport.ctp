@@ -261,7 +261,7 @@ echo $this->Html->url(
 
                 <div class="col-lg-4 text-left">
                   <h3>实惠方便</h3>
-                  <p>低至2元/月，平均0.07元/天，支付宝7*24小时随时下单购买</p>
+                  <p>低至3元/月，平均0.10元/天，支付宝7*24小时随时下单购买</p>
                 </div>
 
                 <div class="col-lg-4 text-left">

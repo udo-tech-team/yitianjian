@@ -445,7 +445,7 @@ class UpdatePort:
         exec_succ = False
         try:
             self.dbObj = Database.MysqlObj()
-            sql_query = 'select ssport, sspass from cake_ports not in (%d, %d) '\
+            sql_query = 'select ssport, sspass from cake_ports where status not in (%d, %d) '\
                     % (self.trial_deleted_status, self.port_invalid_status)
             count, all_res = self.dbObj.find_all(sql_query)
             log_str = 'query[%s] record count[%d]' % (sql_query, count)

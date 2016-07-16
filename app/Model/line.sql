@@ -15,5 +15,6 @@ create table if not exists cake_lines (
       PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
-insert into cake_lines (acclevel, created, modified, country, country_cn, city, city_cn, monthly_price, domains) values ('basic', now(), now(), 'America', '美国', 'Los Angeles', '洛杉矶', 200, 'gso.hk');
-insert into cake_lines (acclevel, created, modified, country, country_cn, city, city_cn, monthly_price, domains) values ('basic', now(), now(), 'America', '美国', 'Sillycon Valley', '硅谷', 200, 'uwill.pw');
+insert into cake_lines (acclevel, created, modified, country, country_cn, city, city_cn, monthly_price, domains) values ('basic', now(), now(), 'America', '美国', 'Los Angeles', '洛杉矶', 300, 'gso.hk');
+insert into cake_lines (acclevel, created, modified, country, country_cn, city, city_cn, monthly_price, domains) values ('basic', now(), now(), 'America', '美国', 'Sillycon Valley', '硅谷', 300, 'uwill.pw');
+insert into cake_lines (acclevel, created, modified, country, country_cn, city, city_cn, monthly_price, domains) values ('basic', now(), now(), 'America', '日本', 'Tokyo', '东京', 300, 'umay.pw');

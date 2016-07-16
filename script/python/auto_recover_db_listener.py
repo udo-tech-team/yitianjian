@@ -101,11 +101,11 @@ class RecoverListener:
         """act according to cmd_str"""
         if not self.GOON:
             logging.warning('GOON is false, stop.')
-            return
+            return False
 
         if remote_ip is None:
             logging.warning('remote ip none, stop.')
-            return
+            return False
 
         # set succ default to false
         is_succ = False 

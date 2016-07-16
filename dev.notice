@@ -48,9 +48,9 @@ NOTICE:  2. & 3. should do at the same time when add a new coloum to a table
                 8=>invalid, deleted. from in-use status to deleted status
 2. cake_orders
     is_paid 0=> not paid, 1=> already paid, 2=> related port info in updating status,
-            3=> related port info updated success, 4 => order processed generate voucher
+            3=> related port info updated success, 4 => order finished generating voucher
 
-[cakephp[
+[cakephp]
 update a field:
     
                     // increase invite_num field.

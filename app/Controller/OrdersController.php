@@ -517,6 +517,7 @@ else {
         // $show_url = 'http://www.ashadowsocks.com/'; //$_POST['WIDshow_url'];
         $show_url = Router::url(array('controller'=>'orders', 'action'=>'show'), true);
 
+        $dataRow = array();
         if (Configure::read('new_user_center') > 0) {
             // remember the line to alloc
             $line_id = 0;
@@ -1107,7 +1108,8 @@ return $html_text;
                 $from_uid, $uid, $rand_num, $date_time_now, 
                 $this->request->clientIp());
 
-            $expire_after_k_months = 3;
+            // TODO expire after time read from conf
+            $expire_after_k_months = 1;
             $expire_datetime = date('Y-m-d H:i:s', 
                 strtotime("+$expire_after_k_months month"));
 
@@ -1177,8 +1179,7 @@ return $html_text;
         $trade_status = $_GET['trade_status'];
         $ali_return_info = 'in alipay_return_url, out_trade_no='
                 . $out_trade_no . ', trade_no=' . $trade_no
-                . ', trade_status=' . $trade_status
-                . ', uid=' . CakeSession::read('uid');
+                . ', trade_status=' . $trade_status;
         CakeLog::write('info', $ali_return_info);
     
     

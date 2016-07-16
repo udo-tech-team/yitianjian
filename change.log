@@ -116,6 +116,7 @@ Notice:
     1. all features fully tested!
     2. newly added db tables, source sql and insert correct data!
     3. enough port added to db tables and ssservers
+    4. switch new_ucenter off in Conf/core.php, see if old ucenter works
 
 # 2016.7.3
 build a testing env for YTJ web

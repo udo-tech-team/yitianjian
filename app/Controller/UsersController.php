@@ -272,9 +272,9 @@ class UsersController extends AppController
                         $date_time_now, $this->request->clientIp());
 
                     // for registering user
-                    $expire_after_k_months = 3;
+                    $expire_after_k_days = 7;
                     $expire_datetime = date('Y-m-d H:i:s', 
-                        strtotime("+$expire_after_k_months month"));
+                        strtotime("+$expire_after_k_days day"));
                     $data_row = array(
                         'md5str' => md5($md5_source),
                         'uid' => $uid,
@@ -293,12 +293,25 @@ class UsersController extends AppController
                     }
 
                     // increase invite_num field.
-                    $this->User->id = $inviting_user['User']['uid'];
-                    $invite_num = $inviting_user['User']['invite_num'] + 1;
-                    $this->User->saveField('invite_num', $invite_num);
+                    //  the following code block doesn't work on 2t-vps[ubuntu]
+                    //      while works on Mac dev env
+//                    $this->User->id = $inviting_user['User']['uid'];
+//                    $invite_num = $inviting_user['User']['invite_num'] + 1;
+//                    $this->User->saveField('invite_num', $invite_num);
+                    $update_fields = array(
+                        'invite_num' => $inviting_user['User']['invite_num'] + 1,
+                    );
+                    $update_cond = array(
+                        'uid' => $inviting_user['User']['uid'],
+                    );
+                    $up_res = $this->User->updateAll(
+                        $update_fields,
+                        $update_cond
+                    );
 
-                    $log_str = sprintf('invite success, new user[%d]',
-                        $uid);
+                    $log_str = sprintf('invite success, new user[%d]' .
+                        ' update invite_num result[%s]',
+                        $uid, $up_res);
                     CakeLog::write('debug', $log_str);
 
                 }
